@@ -6,11 +6,10 @@ replies with a question ("Tell me more about the Renault CTO move"),
 Perplexity researches the answer and sends a contextual reply back.
 
 Limits: 5 total emails per thread (1 digest + 2 back-and-forths).
+Thread state is stored in Supabase so it persists across Actions runs.
 
-Run via cron every 5 minutes:
+Run via cron every 15 minutes:
   python reply_handler.py
-
-Or as a GitHub Actions workflow on schedule.
 """
 
 from __future__ import annotations
@@ -21,7 +20,6 @@ import email.utils
 import imaplib
 import json
 import os
-import re
 import sys
 from datetime import datetime, timedelta
 from email.header import decode_header
@@ -33,27 +31,57 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import httpx
+
 from send_email import send_raw_email
 
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 PPLX_API_URL = "https://api.perplexity.ai/chat/completions"
 PPLX_MODEL = "sonar-pro"
 
-# Track threads: { message_id: { "count": N, "context": str, "user_email": str } }
-THREADS_FILE = Path(__file__).resolve().parent / ".reply_threads.json"
 MAX_EMAILS_PER_THREAD = 5  # 1 digest + 2 back-and-forths
 
 
-def _load_threads() -> dict:
-    if THREADS_FILE.exists():
-        return json.loads(THREADS_FILE.read_text())
-    return {}
+# ── Thread tracking via Supabase ─────────────
+# Table: reply_threads (thread_id text PK, user_email text, count int, context text)
+
+def _sb_headers() -> dict:
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    }
 
 
-def _save_threads(threads: dict) -> None:
-    THREADS_FILE.write_text(json.dumps(threads, indent=2))
+async def _get_thread(thread_id: str) -> dict | None:
+    if not SUPABASE_URL:
+        return None
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{SUPABASE_URL}/rest/v1/reply_threads",
+            headers=_sb_headers(),
+            params={"thread_id": f"eq.{thread_id}"},
+        )
+        rows = r.json() if r.status_code == 200 else []
+        return rows[0] if rows else None
 
+
+async def _upsert_thread(thread_id: str, user_email: str, count: int, context: str) -> None:
+    if not SUPABASE_URL:
+        return
+    async with httpx.AsyncClient() as c:
+        await c.post(
+            f"{SUPABASE_URL}/rest/v1/reply_threads",
+            headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates,return=representation"},
+            json={"thread_id": thread_id, "user_email": user_email, "count": count, "context": context[:4000]},
+        )
+
+
+# ── Email parsing helpers ────────────────────
 
 def _decode_subject(msg) -> str:
     raw = msg.get("Subject", "")
@@ -68,29 +96,23 @@ def _decode_subject(msg) -> str:
 
 
 def _get_text_body(msg) -> str:
-    """Extract plain text body from an email message."""
     if msg.is_multipart():
         for part in msg.walk():
-            ct = part.get_content_type()
-            if ct == "text/plain":
+            if part.get_content_type() == "text/plain":
                 payload = part.get_payload(decode=True)
                 if payload:
-                    charset = part.get_content_charset() or "utf-8"
-                    return payload.decode(charset, errors="replace")
+                    return payload.decode(part.get_content_charset() or "utf-8", errors="replace")
     else:
         payload = msg.get_payload(decode=True)
         if payload:
-            charset = msg.get_content_charset() or "utf-8"
-            return payload.decode(charset, errors="replace")
+            return payload.decode(msg.get_content_charset() or "utf-8", errors="replace")
     return ""
 
 
 def _strip_quoted_text(body: str) -> str:
-    """Remove quoted reply text (lines starting with >) and signatures."""
     lines = body.split("\n")
     clean = []
     for line in lines:
-        # Stop at common reply markers
         stripped = line.strip()
         if stripped.startswith(">"):
             continue
@@ -105,20 +127,16 @@ def _strip_quoted_text(body: str) -> str:
 
 
 def _get_thread_id(msg) -> str | None:
-    """Find the original thread ID from In-Reply-To or References headers."""
-    in_reply_to = msg.get("In-Reply-To", "").strip()
     references = msg.get("References", "").strip()
-
-    # Use the first reference (original message) as thread key
+    in_reply_to = msg.get("In-Reply-To", "").strip()
     if references:
         return references.split()[0]
     return in_reply_to or None
 
 
-async def _research_question(question: str, context: str) -> str:
-    """Use Perplexity to answer the user's follow-up question."""
-    import httpx
+# ── Perplexity research ──────────────────────
 
+async def _research_question(question: str, context: str) -> str:
     api_key = os.getenv("PPLX_KEY")
     if not api_key:
         raise RuntimeError("PPLX_KEY not set")
@@ -157,7 +175,6 @@ Write in a warm but professional tone. Sign off as "— Scoop 🐶🗞️".""",
     data = resp.json()
     answer = data["choices"][0]["message"]["content"].strip()
 
-    # Append sources if available
     citations = data.get("citations", [])
     if citations:
         answer += "\n\nSources:\n" + "\n".join(f"- {url}" for url in citations[:5])
@@ -165,8 +182,9 @@ Write in a warm but professional tone. Sign off as "— Scoop 🐶🗞️".""",
     return answer
 
 
+# ── Gmail IMAP ───────────────────────────────
+
 def fetch_replies() -> list[dict]:
-    """Connect to Gmail IMAP and fetch unread replies to Scoop digests."""
     if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
         print("Gmail credentials not set, skipping.")
         return []
@@ -175,8 +193,6 @@ def fetch_replies() -> list[dict]:
     mail.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
     mail.select("INBOX")
 
-    # Search for unread emails that are replies (have In-Reply-To header)
-    # and received in the last 7 days
     since = (datetime.now() - timedelta(days=7)).strftime("%d-%b-%Y")
     _, msg_ids = mail.search(None, f'(UNSEEN SINCE {since})')
 
@@ -190,70 +206,61 @@ def fetch_replies() -> list[dict]:
         raw = msg_data[0][1]
         msg = email.message_from_bytes(raw)
 
-        # Only process replies (has In-Reply-To or References)
         thread_id = _get_thread_id(msg)
         if not thread_id:
             continue
 
         from_addr = email.utils.parseaddr(msg.get("From", ""))[1]
-        subject = _decode_subject(msg)
-        body = _get_text_body(msg)
-        question = _strip_quoted_text(body)
-        message_id = msg.get("Message-ID", "")
-
-        if not question.strip():
+        if from_addr.lower() == GMAIL_ADDRESS.lower():
             continue
 
-        # Don't process our own outgoing messages
-        if from_addr.lower() == GMAIL_ADDRESS.lower():
+        subject = _decode_subject(msg)
+        question = _strip_quoted_text(_get_text_body(msg))
+        if not question.strip():
             continue
 
         replies.append({
             "msg_id": msg_id,
-            "message_id": message_id,
             "thread_id": thread_id,
             "from": from_addr,
             "subject": subject,
             "question": question,
         })
 
-        # Mark as seen
         mail.store(msg_id, "+FLAGS", "\\Seen")
 
     mail.logout()
     return replies
 
 
+# ── Main loop ────────────────────────────────
+
 async def process_replies() -> int:
-    """Fetch replies, research answers, send responses."""
     replies = fetch_replies()
     if not replies:
         print("No new replies.")
         return 0
 
-    threads = _load_threads()
     processed = 0
 
     for reply in replies:
         thread_id = reply["thread_id"]
-        thread = threads.get(thread_id, {"count": 1, "context": "", "user_email": reply["from"]})
+        thread = await _get_thread(thread_id)
+        count = thread["count"] if thread else 1
+        context = thread["context"] if thread else ""
 
-        # Check limit
-        if thread["count"] >= MAX_EMAILS_PER_THREAD:
-            print(f"  Thread with {reply['from']} hit {MAX_EMAILS_PER_THREAD}-email limit, skipping.")
+        if count >= MAX_EMAILS_PER_THREAD:
+            print(f"  Thread with {reply['from']} hit limit, skipping.")
             continue
 
         print(f"  Reply from {reply['from']}: {reply['question'][:80]}...")
 
-        # Research the answer
-        answer = await _research_question(reply["question"], thread.get("context", ""))
+        answer = await _research_question(reply["question"], context)
 
-        # Build reply subject
         subject = reply["subject"]
         if not subject.lower().startswith("re:"):
             subject = f"Re: {subject}"
 
-        # Send reply
         html_answer = answer.replace("\n", "<br>")
         html = f"""<div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:15px; line-height:1.6; color:#0f172a;">
 {html_answer}
@@ -262,13 +269,10 @@ async def process_replies() -> int:
         send_raw_email(reply["from"], subject, html)
         print(f"  Replied to {reply['from']}")
 
-        # Update thread state
-        thread["count"] = thread.get("count", 1) + 2  # +1 for their reply, +1 for our response
-        thread["context"] += f"\nUser asked: {reply['question']}\nScoop answered: {answer[:500]}"
-        threads[thread_id] = thread
+        new_context = context + f"\nUser asked: {reply['question']}\nScoop answered: {answer[:500]}"
+        await _upsert_thread(thread_id, reply["from"], count + 2, new_context)
         processed += 1
 
-    _save_threads(threads)
     return processed
 
 

@@ -39,6 +39,16 @@ create table if not exists auth_tokens (
   created_at timestamptz not null default now()
 );
 
+-- Reply thread tracking (for email back-and-forth limits)
+create table if not exists reply_threads (
+  thread_id text primary key,
+  user_email text not null,
+  count int not null default 1,
+  context text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- Indexes
 create index if not exists idx_companies_user on companies(user_id);
 create index if not exists idx_digests_user on digests(user_id);

@@ -2,8 +2,8 @@ name: Check Replies
 
 on:
   schedule:
-    # Every 5 minutes
-    - cron: '*/5 * * * *'
+    # Every 15 minutes (GitHub Actions minimum practical interval)
+    - cron: '*/15 * * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -30,4 +30,6 @@ jobs:
           PPLX_KEY: ${{ secrets.PPLX_KEY }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python reply_handler.py

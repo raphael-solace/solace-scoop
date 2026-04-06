@@ -23,5 +23,8 @@ node_modules/
 *.swo
 .DS_Store
 
+# Runtime state
+.reply_threads.json
+
 # Logs
 *.log

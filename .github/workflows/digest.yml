@@ -1,10 +1,9 @@
 name: Weekly Digest
 
 on:
-  # Every Sunday at 11pm UTC (Monday 7am in most timezones)
   schedule:
+    # Every Sunday at 11pm UTC
     - cron: '0 23 * * 0'
-  # Manual trigger for testing
   workflow_dispatch:
     inputs:
       user_email:
@@ -34,7 +33,13 @@ jobs:
       - name: Run digest pipeline
         env:
           PPLX_KEY: ${{ secrets.PPLX_KEY }}
-          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: python run_digest.py ${{ inputs.user_email && format('--email {0}', inputs.user_email) || '' }}
+        run: |
+          if [ -n "${{ inputs.user_email }}" ]; then
+            python run_digest.py --email "${{ inputs.user_email }}"
+          else
+            python run_digest.py
+          fi
