@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scoop — We fetch. You close.</title>
+  <title>Scoop - We fetch. You close.</title>
   <meta name="description" content="Scoop fetches the news that matters for your deals. Account intelligence delivered to your inbox every Monday.">
 
   <!-- Open Graph -->
@@ -39,7 +39,6 @@
       <div class="nav__links">
         <a href="#how-it-works">How it works</a>
         <a href="#example">Example</a>
-        <a href="#pricing">Pricing</a>
         <a href="#signup" class="btn btn--sm">Get started</a>
       </div>
     </div>
@@ -50,9 +49,12 @@
     <div class="container">
       <div class="hero__badge">🐶🗞️ Account intelligence for sales teams</div>
       <h1 class="hero__title">We fetch. You close.</h1>
-      <p class="hero__subtitle">Scoop sniffs out the news that matters for your deals &mdash; exec changes, funding, M&amp;A &mdash; and drops it in your inbox every Monday.</p>
+      <p class="hero__subtitle">Scoop sniffs out the news that matters for your deals and drops it in your inbox every Monday.</p>
       <div class="hero__cta">
-        <a href="#signup" class="btn btn--lg">Get your first digest free</a>
+        <form class="hero__form" id="hero-form" novalidate>
+          <input class="hero__input" type="email" id="hero-email" placeholder="you@company.com" required autocomplete="email">
+          <button type="submit" class="btn btn--lg">Get my customer's news</button>
+        </form>
         <p class="hero__note">No credit card required &middot; 2-minute setup</p>
       </div>
     </div>
@@ -115,7 +117,7 @@
         <div class="steps__item">
           <div class="steps__number">👃</div>
           <h3>We sniff out signals</h3>
-          <p>Executive changes, funding rounds, M&A, layoffs, product launches, regulatory shifts &mdash; across the entire web.</p>
+          <p>Executive changes, funding rounds, M&amp;A, layoffs, product launches, regulatory shifts, across the entire web.</p>
         </div>
         <div class="steps__item">
           <div class="steps__number">🗞️</div>
@@ -139,7 +141,7 @@
             <div class="digest__date">Week of March 31, 2026</div>
           </div>
         </div>
-        <p class="digest__intro">Hi Sarah &mdash; here are the 4 most important things that happened at your accounts this week.</p>
+        <p class="digest__intro">Hi Sarah, here are the 4 most important things that happened at your accounts this week.</p>
 
         <div class="digest__item">
           <div class="digest__signal">
@@ -159,7 +161,7 @@
           </div>
           <p class="digest__body">Closed $10B round at $62B valuation. Expanding enterprise sales team by 40%.</p>
           <div class="digest__why">
-            <strong>Why this matters:</strong> Growing companies are buying. New budget just unlocked &mdash; this is the right time to propose expanding the pilot to a full deployment.
+            <strong>Why this matters:</strong> Growing companies are buying. New budget just unlocked. This is the right time to propose expanding the pilot to a full deployment.
           </div>
         </div>
 
@@ -170,7 +172,7 @@
           </div>
           <p class="digest__body">Launched new B2B invoicing product targeting the mid-market segment you operate in.</p>
           <div class="digest__why">
-            <strong>Why this matters:</strong> They're moving into adjacent territory. Check if your contacts have evaluated the new offering &mdash; position your product's strengths before the next QBR.
+            <strong>Why this matters:</strong> They're moving into adjacent territory. Check if your contacts have evaluated the new offering and position your product's strengths before the next QBR.
           </div>
         </div>
 
@@ -181,7 +183,7 @@
           </div>
           <p class="digest__body">CEO Yamini Rangan announced pivot to AI-first product strategy at annual conference.</p>
           <div class="digest__why">
-            <strong>Why this matters:</strong> Strategic pivots create new requirements. Your integration capabilities become more relevant &mdash; time to schedule a technical deep-dive with their product team.
+            <strong>Why this matters:</strong> Strategic pivots create new requirements. Your integration capabilities become more relevant. Time to schedule a technical deep-dive with their product team.
           </div>
         </div>
 
@@ -249,51 +251,6 @@
     </div>
   </section>
 
-  <!-- Pricing -->
-  <section class="pricing" id="pricing">
-    <div class="container">
-      <h2 class="section__title">Simple pricing</h2>
-      <p class="section__subtitle">Below the expense report threshold. No approval needed.</p>
-      <div class="pricing__grid">
-        <div class="pricing__card">
-          <div class="pricing__name">Free</div>
-          <div class="pricing__price"><span class="pricing__amount">$0</span><span class="pricing__period">/month</span></div>
-          <ul class="pricing__features">
-            <li>3 accounts monitored</li>
-            <li>Weekly email digest</li>
-            <li>Basic signal detection</li>
-          </ul>
-          <a href="#signup" class="btn btn--outline btn--full">Get started</a>
-        </div>
-        <div class="pricing__card pricing__card--featured">
-          <div class="pricing__badge">Most popular</div>
-          <div class="pricing__name">Pro</div>
-          <div class="pricing__price"><span class="pricing__amount">$10</span><span class="pricing__period">/month</span></div>
-          <ul class="pricing__features">
-            <li><strong>10 accounts</strong> monitored</li>
-            <li>Weekly email digest</li>
-            <li>"Why this matters" context</li>
-            <li>Suggested conversation openers</li>
-            <li>Priority signal detection</li>
-          </ul>
-          <a href="#signup" class="btn btn--full">Start free trial</a>
-        </div>
-        <div class="pricing__card">
-          <div class="pricing__name">Team</div>
-          <div class="pricing__price"><span class="pricing__amount">$29</span><span class="pricing__period">/seat/month</span></div>
-          <ul class="pricing__features">
-            <li><strong>20 accounts</strong> per seat</li>
-            <li>Everything in Pro</li>
-            <li>Shared account coverage</li>
-            <li>Team dashboard</li>
-            <li>CRM integration (coming soon)</li>
-          </ul>
-          <a href="#signup" class="btn btn--outline btn--full">Contact us</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- FAQ -->
   <section class="faq">
     <div class="container">
@@ -301,7 +258,7 @@
       <div class="faq__grid">
         <details class="faq__item">
           <summary>What kind of signals does Scoop detect?</summary>
-          <p>Executive changes, funding rounds, M&A activity, layoffs, product launches, regulatory actions, strategic pivots, and earnings surprises. We scan the entire web and filter to what's relevant to your deals.</p>
+          <p>Executive changes, funding rounds, M&amp;A activity, layoffs, product launches, regulatory actions, strategic pivots, and earnings surprises. We scan the entire web and filter to what's relevant to your deals.</p>
         </details>
         <details class="faq__item">
           <summary>How is this different from Google Alerts?</summary>

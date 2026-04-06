@@ -16,6 +16,8 @@
   // ── DOM refs ───────────────────────────────
   const nav = document.getElementById('nav');
   const form = document.getElementById('signup-form');
+  const heroForm = document.getElementById('hero-form');
+  const heroEmail = document.getElementById('hero-email');
   const btnStep1 = document.getElementById('btn-step1');
   const btnSubmit = document.getElementById('btn-submit');
   const emailInput = document.getElementById('email');
@@ -30,6 +32,26 @@
     nav.classList.toggle('nav--scrolled', y > 10);
     lastScroll = y;
   }, { passive: true });
+
+  // ── Hero form (email → scroll to signup) ───
+  heroForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = heroEmail.value.trim();
+    if (!email || !validateEmail(email)) {
+      heroEmail.focus();
+      return;
+    }
+    // Prefill the signup form email and skip to step 2
+    emailInput.value = email;
+    var target = document.getElementById('signup');
+    var offset = 80;
+    var top = target.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: top, behavior: 'smooth' });
+    setTimeout(function () {
+      showStep(2);
+      productInput.focus();
+    }, 600);
+  });
 
   // ── Multi-step form ────────────────────────
   function showStep(n) {
