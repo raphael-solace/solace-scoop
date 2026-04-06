@@ -81,22 +81,24 @@ def _parse_json(content: str) -> dict | list:
 async def research_seller(product: str) -> dict:
     data = await _pplx_query(
         system="You are a B2B sales intelligence analyst. Return only valid JSON.",
-        prompt=f"""Research "{product}" thoroughly as a B2B product/company.
+        prompt=f"""Research "{product}" thoroughly as a B2B product or service.
 
 I need to understand:
-- What exactly this product does technically
-- Who the typical buyer is inside a large enterprise (specific job titles)
-- What technical problems it solves
+- What this company/product does (could be software, services, insurance, consulting, manufacturing, logistics, anything B2B)
+- Who the typical buyer is inside a target company (specific job titles at the level that evaluates and signs off)
+- What problems it solves for the buyer
 - What events at a prospect company would create a buying opportunity
+- What industry or industries this product serves
 
 Respond in this exact JSON format (no markdown, no code fences):
 {{
-  "company_summary": "<2-3 sentences on what this company/product does technically>",
-  "buyer_personas": "<comma-separated list of 5-8 job titles who evaluate and buy this product>",
-  "use_cases": "<the top 5 technical problems this product solves, comma-separated>",
-  "buying_triggers": "<7-10 specific events that would create a sales opportunity, comma-separated. Be very specific and technical.>",
+  "company_summary": "<2-3 sentences on what this company/product does>",
+  "industry": "<the seller's primary industry: software, insurance, consulting, manufacturing, logistics, financial services, healthcare, etc.>",
+  "buyer_personas": "<comma-separated list of 5-8 job titles who evaluate and buy this product. Be specific to the industry. Not just C-suite, include director/VP/manager-level roles.>",
+  "use_cases": "<the top 5 problems this product solves for buyers, comma-separated>",
+  "buying_triggers": "<7-10 specific events at a prospect company that would create a sales opportunity, comma-separated. Be specific to this product and industry.>",
   "competitors": "<top 3-5 competitors, comma-separated>",
-  "keywords": "<10 technical keywords and phrases a prospect would use when they need this product, comma-separated>"
+  "keywords": "<10 keywords and phrases a prospect would use when they need this product, comma-separated>"
 }}""",
         max_tokens=600,
     )
@@ -113,55 +115,52 @@ QUERY_TYPES = [
     {
         "name": "people_moves",
         "prompt": """Find recent role changes, appointments, departures, or promotions
-at {company} in the last 30 days. Focus specifically on:
-- CTO, CIO, CDO, VP Engineering, VP IT, Chief Architect, Head of Digital
-- Directors of Integration, Enterprise Architecture, Cloud, Platform
-- Any IT or technology leadership change at any level
-- Also include relevant changes at the VP/Director level in operations, supply chain, or manufacturing IT
+at {company} in the last 30 days. Focus on people in roles relevant to buying {product}:
+- Roles like: {buyer_personas}
+- Any leadership change at the VP, Director, or Head-of level in departments that would buy {product}
+- New hires into senior roles in relevant departments
 
 Include the person's NAME, their new TITLE, and where they came from if known.
-Do NOT include C-suite business roles (CEO, CFO, CMO) unless they have a technology background.
+Skip roles that have no connection to buying {product}.
 If no relevant people moves found, say so clearly.""",
     },
     {
-        "name": "tech_initiatives",
-        "prompt": """Find recent technology initiatives, IT projects, or digital transformation
-programs at {company} in the last 30 days. Look for:
-- Cloud migration or modernization projects
-- ERP, CRM, or PLM implementations or replacements
-- Event-driven architecture, microservices, or API platform adoption
-- AI/ML deployment programs
-- IoT, edge computing, or real-time data initiatives
-- IT budget increases or new technology investment announcements
-- RFPs, tenders, or vendor selection processes for IT infrastructure
+        "name": "business_initiatives",
+        "prompt": """Find recent initiatives, programs, or strategic projects at {company}
+in the last 30 days that would be relevant to someone selling {product}.
 
-Include specific details: project scope, budget if mentioned, timeline, technology choices.
+Look for:
+- Programs related to: {use_cases}
+- Budget increases or new investment announcements in relevant areas
+- RFPs, tenders, or vendor selection processes
+- Transformation programs, modernization efforts, or expansion plans
+- Anything matching these buying triggers: {buying_triggers}
+
+Include specific details: project scope, budget if mentioned, timeline.
 If nothing found, say so clearly.""",
     },
     {
         "name": "hiring_signals",
-        "prompt": """Find evidence that {company} is actively hiring for technology roles
-that suggest they are building or expanding IT infrastructure. Look for:
-- Job postings for: {keywords}
-- New teams being formed (integration, platform, architecture, AI/ML)
-- LinkedIn job postings or career page listings
-- Engineering blog posts about scaling challenges
-- Conference talks by their engineers about technical problems
+        "prompt": """Find evidence that {company} is actively hiring for roles
+that suggest they need {product}. Look for:
+- Job postings related to: {keywords}
+- New teams or departments being formed in relevant areas
+- Rapid headcount growth in departments that buy {product}
+- Job descriptions that mention problems {product} solves
 
 Include specific job titles and what they suggest about the company's direction.
 If nothing relevant found, say so clearly.""",
     },
     {
         "name": "partnerships_vendors",
-        "prompt": """Find recent technology partnerships, vendor selections, or platform
-choices made by {company} in the last 30 days. Look for:
-- New technology vendor announcements (cloud providers, middleware, integration)
-- Strategic partnerships with technology companies
-- Participation in vendor ecosystems or marketplaces
-- Technology conference sponsorships or keynotes (as buyer, not seller)
-- Competitor product deployments (using {competitors})
+        "prompt": """Find recent partnerships, vendor selections, or strategic relationships
+at {company} in the last 30 days relevant to someone selling {product}. Look for:
+- New vendor announcements in areas where {product} competes
+- Strategic partnerships that change how {company} operates
+- Competitor deployments (competitors include: {competitors})
+- Industry events or conferences where {company} presented as a buyer
 
-Include specific vendor names and what was selected/deployed.
+Include specific names and details.
 If nothing relevant found, say so clearly.""",
     },
 ]
@@ -174,15 +173,20 @@ async def _run_company_query(
     seller_context: dict,
 ) -> list[dict]:
     """Run one query type for one company, return 0-3 signal items."""
-    keywords = seller_context.get("keywords", "integration, event-driven, API")
+    keywords = seller_context.get("keywords", "")
     competitors = seller_context.get("competitors", "")
-    buyer_personas = seller_context.get("buyer_personas", "IT leaders")
-    use_cases = seller_context.get("use_cases", "enterprise integration")
+    buyer_personas = seller_context.get("buyer_personas", "decision-makers")
+    use_cases = seller_context.get("use_cases", "")
+    buying_triggers = seller_context.get("buying_triggers", "")
 
     prompt = query_type["prompt"].format(
         company=company,
+        product=product,
         keywords=keywords,
         competitors=competitors,
+        buyer_personas=buyer_personas,
+        use_cases=use_cases,
+        buying_triggers=buying_triggers,
     )
 
     data = await _pplx_query(
