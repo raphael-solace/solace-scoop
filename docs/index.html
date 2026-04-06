@@ -32,43 +32,18 @@
     </div>
   </nav>
 
-  <!-- Hero + Form -->
+  <!-- Hero -->
   <header class="hero" id="signup">
     <div class="container">
       <div class="hero__badge">🐶🗞️ Account intelligence for sales teams</div>
       <h1 class="hero__title">We fetch. You close.</h1>
       <p class="hero__subtitle">Scoop sniffs out the news that matters for your deals and drops it in your inbox every Monday.</p>
 
-      <form id="signup-form" class="signup-form" novalidate>
-        <div class="signup-form__fields">
-          <div class="signup-form__field">
-            <label class="signup-form__label" for="email">Your work email</label>
-            <input class="signup-form__input" type="email" id="email" name="email" placeholder="you@company.com" required autocomplete="email">
-          </div>
-          <div class="signup-form__field">
-            <label class="signup-form__label" for="product">What do you sell?</label>
-            <input class="signup-form__input" type="text" id="product" name="product" placeholder="e.g. Cloud ERP, Cybersecurity SaaS, Data platform..." required>
-          </div>
-          <div class="signup-form__field signup-form__field--full">
-            <label class="signup-form__label" for="customers">Your top 10 accounts <span class="signup-form__hint">one company per line</span></label>
-            <textarea class="signup-form__textarea" id="customers" name="customers" rows="6" placeholder="Snowflake&#10;Databricks&#10;Stripe&#10;HubSpot&#10;Cloudflare&#10;Datadog&#10;Confluent&#10;MongoDB&#10;Elastic&#10;HashiCorp" required></textarea>
-          </div>
-        </div>
-        <button type="submit" class="btn btn--lg btn--full" id="btn-submit">
-          <span class="btn__text">Get my customer's news</span>
-          <span class="btn__loader" hidden>
-            <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
-            Subscribing...
-          </span>
-        </button>
-        <p class="signup-form__note">Free. No credit card. Unsubscribe anytime.</p>
+      <form id="hero-form" class="hero__form" novalidate>
+        <input class="hero__input" type="email" id="hero-email" placeholder="you@company.com" required autocomplete="email">
+        <button type="submit" class="btn btn--lg">Get my customer's news</button>
       </form>
-
-      <div id="signup-success" class="signup-success" hidden>
-        <div class="signup-success__icon">🗞️</div>
-        <h2>You're in!</h2>
-        <p>Your first digest arrives Monday at 7am. We'll cover all the accounts you listed.</p>
-      </div>
+      <p class="hero__note">Free. No credit card. Unsubscribe anytime.</p>
     </div>
   </header>
 
@@ -93,6 +68,40 @@
           <h3>Paper at your door, Monday 7am</h3>
           <p>A short digest in your inbox. Each item tells you what happened and <strong>why it matters for your deal</strong>.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Setup Form -->
+  <section class="setup" id="setup">
+    <div class="container">
+      <h2 class="section__title">Tell us about your accounts</h2>
+      <p class="section__subtitle">We'll tailor every digest to your deals.</p>
+
+      <form id="signup-form" class="signup-form" novalidate>
+        <div class="signup-form__fields">
+          <div class="signup-form__field signup-form__field--full">
+            <label class="signup-form__label" for="product">What do you sell?</label>
+            <input class="signup-form__input" type="text" id="product" name="product" placeholder="e.g. Cloud ERP, Cybersecurity SaaS, Data platform..." required>
+          </div>
+          <div class="signup-form__field signup-form__field--full">
+            <label class="signup-form__label" for="customers">Your top 10 accounts <span class="signup-form__hint">one company per line</span></label>
+            <textarea class="signup-form__textarea" id="customers" name="customers" rows="6" placeholder="Snowflake&#10;Databricks&#10;Stripe&#10;HubSpot&#10;Cloudflare&#10;Datadog&#10;Confluent&#10;MongoDB&#10;Elastic&#10;HashiCorp" required></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn--lg btn--full" id="btn-submit">
+          <span class="btn__text">Subscribe</span>
+          <span class="btn__loader" hidden>
+            <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
+            Subscribing...
+          </span>
+        </button>
+      </form>
+
+      <div id="signup-success" class="signup-success" hidden>
+        <div class="signup-success__icon">🗞️</div>
+        <h2>You're in!</h2>
+        <p>Your first digest arrives Monday at 7am. We'll cover all the accounts you listed.</p>
       </div>
     </div>
   </section>

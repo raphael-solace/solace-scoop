@@ -144,10 +144,47 @@ img, svg { display: block; }
   line-height: 1.6;
 }
 
-/* Signup form (inline in hero) */
+/* Hero inline CTA */
+.hero__form {
+  display: flex;
+  gap: var(--space-sm);
+  max-width: 480px;
+  margin: var(--space-2xl) auto 0;
+}
+
+.hero__input {
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  padding: 0.875rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.hero__input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.hero__input::placeholder { color: var(--color-text-muted); }
+
+.hero__note {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-md);
+}
+
+/* Setup section */
+.setup { padding: var(--space-4xl) 0; }
+
+/* Signup form card */
 .signup-form {
   max-width: 640px;
-  margin: var(--space-3xl) auto 0;
+  margin: var(--space-2xl) auto 0;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -158,7 +195,6 @@ img, svg { display: block; }
 
 .signup-form__fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: var(--space-lg);
 }
 
@@ -290,15 +326,15 @@ img, svg { display: block; }
 
   .hero { padding: 120px 0 60px; }
   .hero__subtitle { font-size: 1rem; }
+  .hero__form { flex-direction: column; }
 
-  .signup-form__fields { grid-template-columns: 1fr; }
   .signup-form { padding: var(--space-xl); }
 
   .steps__grid { grid-template-columns: 1fr; gap: var(--space-xl); }
 
   .footer__inner { flex-direction: column; gap: var(--space-md); text-align: center; }
 
-  .steps, .faq { padding: var(--space-3xl) 0; }
+  .steps, .setup, .faq { padding: var(--space-3xl) 0; }
 }
 
 @media (max-width: 480px) {
