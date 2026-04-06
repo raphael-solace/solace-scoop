@@ -5,103 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scoop - We fetch. You close.</title>
   <meta name="description" content="Scoop fetches the news that matters for your deals. Account intelligence delivered to your inbox every Monday.">
-
-  <!-- Open Graph -->
   <meta property="og:title" content="Scoop 🐶🗞️ We fetch. You close.">
   <meta property="og:description" content="Account intelligence fetched fresh for sales teams. Never walk into a call unprepared.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://noptus.github.io/scoop">
-
-  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Scoop 🐶🗞️ We fetch. You close.">
   <meta name="twitter:description" content="Account intelligence fetched fresh for sales teams. Never walk into a call unprepared.">
-
-  <!-- Favicon (emoji) -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐶</text></svg>">
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <!-- Navigation -->
+  <!-- Nav -->
   <nav class="nav" id="nav">
     <div class="container nav__inner">
-      <a href="#" class="nav__logo">
-        <span class="nav__emoji">🐶🗞️</span>
-        <span>Scoop</span>
-      </a>
+      <a href="#" class="nav__logo"><span class="nav__emoji">🐶🗞️</span> Scoop</a>
       <div class="nav__links">
         <a href="#how-it-works">How it works</a>
-        <a href="#example">Example</a>
+        <a href="#faq">FAQ</a>
         <a href="#signup" class="btn btn--sm">Get started</a>
       </div>
     </div>
   </nav>
 
-  <!-- Hero -->
-  <header class="hero">
+  <!-- Hero + Form -->
+  <header class="hero" id="signup">
     <div class="container">
       <div class="hero__badge">🐶🗞️ Account intelligence for sales teams</div>
       <h1 class="hero__title">We fetch. You close.</h1>
       <p class="hero__subtitle">Scoop sniffs out the news that matters for your deals and drops it in your inbox every Monday.</p>
-      <div class="hero__cta">
-        <form class="hero__form" id="hero-form" novalidate>
-          <input class="hero__input" type="email" id="hero-email" placeholder="you@company.com" required autocomplete="email">
-          <button type="submit" class="btn btn--lg">Get my customer's news</button>
-        </form>
-        <p class="hero__note">No credit card required &middot; 2-minute setup</p>
+
+      <form id="signup-form" class="signup-form" novalidate>
+        <div class="signup-form__fields">
+          <div class="signup-form__field">
+            <label class="signup-form__label" for="email">Your work email</label>
+            <input class="signup-form__input" type="email" id="email" name="email" placeholder="you@company.com" required autocomplete="email">
+          </div>
+          <div class="signup-form__field">
+            <label class="signup-form__label" for="product">What do you sell?</label>
+            <input class="signup-form__input" type="text" id="product" name="product" placeholder="e.g. Cloud ERP, Cybersecurity SaaS, Data platform..." required>
+          </div>
+          <div class="signup-form__field signup-form__field--full">
+            <label class="signup-form__label" for="customers">Your top 10 accounts <span class="signup-form__hint">one company per line</span></label>
+            <textarea class="signup-form__textarea" id="customers" name="customers" rows="6" placeholder="Snowflake&#10;Databricks&#10;Stripe&#10;HubSpot&#10;Cloudflare&#10;Datadog&#10;Confluent&#10;MongoDB&#10;Elastic&#10;HashiCorp" required></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn--lg btn--full" id="btn-submit">
+          <span class="btn__text">Get my customer's news</span>
+          <span class="btn__loader" hidden>
+            <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
+            Subscribing...
+          </span>
+        </button>
+        <p class="signup-form__note">Free. No credit card. Unsubscribe anytime.</p>
+      </form>
+
+      <div id="signup-success" class="signup-success" hidden>
+        <div class="signup-success__icon">🗞️</div>
+        <h2>You're in!</h2>
+        <p>Your first digest arrives Monday at 7am. We'll cover all the accounts you listed.</p>
       </div>
     </div>
   </header>
-
-  <!-- Logos / Social Proof -->
-  <section class="proof">
-    <div class="container">
-      <p class="proof__label">Trusted by B2B sales teams tracking enterprise accounts</p>
-      <div class="proof__logos">
-        <span>SaaS</span>
-        <span>Insurance</span>
-        <span>Fintech</span>
-        <span>Consulting</span>
-        <span>Manufacturing</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Problem -->
-  <section class="problem">
-    <div class="container">
-      <div class="problem__grid">
-        <div class="problem__card">
-          <div class="problem__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
-          </div>
-          <h3>Your champion left the company</h3>
-          <p>You found out during the renewal call. The deal slipped two quarters.</p>
-        </div>
-        <div class="problem__card">
-          <div class="problem__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
-          </div>
-          <h3>A prospect just raised $50M</h3>
-          <p>They had budget to buy. Your competitor reached out first because they saw the news.</p>
-        </div>
-        <div class="problem__card">
-          <div class="problem__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <h3>You're tracking 20 accounts manually</h3>
-          <p>Google Alerts, LinkedIn, news sites. It takes an hour a week and you still miss things.</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- How It Works -->
   <section class="steps" id="how-it-works">
@@ -112,12 +81,12 @@
         <div class="steps__item">
           <div class="steps__number">🦴</div>
           <h3>Toss us a list</h3>
-          <p>Paste your top 10 customer names. Tell us what you sell. That's the entire setup.</p>
+          <p>Paste your top 10 customer names and tell us what you sell. That's the entire setup.</p>
         </div>
         <div class="steps__item">
           <div class="steps__number">👃</div>
           <h3>We sniff out signals</h3>
-          <p>Executive changes, funding rounds, M&amp;A, layoffs, product launches, regulatory shifts, across the entire web.</p>
+          <p>Executive changes, funding rounds, M&amp;A, layoffs, product launches, regulatory shifts. Across the entire web.</p>
         </div>
         <div class="steps__item">
           <div class="steps__number">🗞️</div>
@@ -128,131 +97,8 @@
     </div>
   </section>
 
-  <!-- Example Digest -->
-  <section class="example" id="example">
-    <div class="container">
-      <h2 class="section__title">Here's what Scoop fetches for you</h2>
-      <p class="section__subtitle">A real example of a Monday morning digest.</p>
-      <div class="digest">
-        <div class="digest__header">
-          <div class="digest__logo"><span style="font-size:1.5rem;">🐶🗞️</span></div>
-          <div>
-            <div class="digest__title">Your Weekly Scoop</div>
-            <div class="digest__date">Week of March 31, 2026</div>
-          </div>
-        </div>
-        <p class="digest__intro">Hi Sarah, here are the 4 most important things that happened at your accounts this week.</p>
-
-        <div class="digest__item">
-          <div class="digest__signal">
-            <span class="digest__tag digest__tag--red">Executive Change</span>
-            <span class="digest__company">Snowflake</span>
-          </div>
-          <p class="digest__body">CFO Michael Scarpelli announced retirement effective Q3. Board has begun successor search.</p>
-          <div class="digest__why">
-            <strong>Why this matters:</strong> Budget decisions on your enterprise deal may stall during the transition. Reach out to your technical champion to understand if procurement timelines are shifting.
-          </div>
-        </div>
-
-        <div class="digest__item">
-          <div class="digest__signal">
-            <span class="digest__tag digest__tag--green">Funding</span>
-            <span class="digest__company">Databricks</span>
-          </div>
-          <p class="digest__body">Closed $10B round at $62B valuation. Expanding enterprise sales team by 40%.</p>
-          <div class="digest__why">
-            <strong>Why this matters:</strong> Growing companies are buying. New budget just unlocked. This is the right time to propose expanding the pilot to a full deployment.
-          </div>
-        </div>
-
-        <div class="digest__item">
-          <div class="digest__signal">
-            <span class="digest__tag digest__tag--amber">Competitive</span>
-            <span class="digest__company">Stripe</span>
-          </div>
-          <p class="digest__body">Launched new B2B invoicing product targeting the mid-market segment you operate in.</p>
-          <div class="digest__why">
-            <strong>Why this matters:</strong> They're moving into adjacent territory. Check if your contacts have evaluated the new offering and position your product's strengths before the next QBR.
-          </div>
-        </div>
-
-        <div class="digest__item">
-          <div class="digest__signal">
-            <span class="digest__tag digest__tag--blue">Strategic</span>
-            <span class="digest__company">HubSpot</span>
-          </div>
-          <p class="digest__body">CEO Yamini Rangan announced pivot to AI-first product strategy at annual conference.</p>
-          <div class="digest__why">
-            <strong>Why this matters:</strong> Strategic pivots create new requirements. Your integration capabilities become more relevant. Time to schedule a technical deep-dive with their product team.
-          </div>
-        </div>
-
-        <div class="digest__footer">
-          <p>Tracking 10 accounts &middot; Next digest: Monday, April 7</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Signup Form -->
-  <section class="signup" id="signup">
-    <div class="container">
-      <h2 class="section__title">Let Scoop fetch for you 🐶</h2>
-      <p class="section__subtitle">Enter your details and we'll show you what your Monday morning looks like.</p>
-
-      <div class="form-wrapper">
-        <form id="signup-form" class="form" novalidate>
-          <!-- Step 1: Email -->
-          <div class="form__step form__step--active" data-step="1">
-            <label class="form__label" for="email">Your work email</label>
-            <input class="form__input" type="email" id="email" name="email" placeholder="you@company.com" required autocomplete="email">
-            <button type="button" class="btn btn--full" id="btn-step1">Continue</button>
-          </div>
-
-          <!-- Step 2: Context -->
-          <div class="form__step" data-step="2">
-            <label class="form__label" for="product">What do you sell?</label>
-            <input class="form__input" type="text" id="product" name="product" placeholder="e.g. Enterprise data platform, Cybersecurity SaaS, Cloud ERP..." required>
-
-            <label class="form__label" for="customers">Your top 10 accounts <span class="form__hint">one company per line</span></label>
-            <textarea class="form__textarea" id="customers" name="customers" rows="8" placeholder="Snowflake&#10;Databricks&#10;Stripe&#10;HubSpot&#10;Cloudflare&#10;Datadog&#10;Confluent&#10;MongoDB&#10;Elastic&#10;HashiCorp" required></textarea>
-
-            <button type="submit" class="btn btn--full" id="btn-submit">
-              <span class="btn__text">🐶 Fetch my sample digest</span>
-              <span class="btn__loader" hidden>
-                <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
-                Fetching...
-              </span>
-            </button>
-          </div>
-
-          <!-- Step 3: Result -->
-          <div class="form__step" data-step="3">
-            <div class="form__success">
-              <div class="form__check">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              </div>
-              <h3>🗞️ Good boy brought your digest</h3>
-              <p>Here's a preview of what lands in your inbox every Monday. We fetched signals from your first 3 accounts.</p>
-            </div>
-            <div id="generated-digest" class="digest digest--generated"></div>
-            <div class="form__next-steps">
-              <p><strong>What happens next?</strong></p>
-              <ul>
-                <li>We'll email your first full digest on Monday at 7am</li>
-                <li>It will cover all 10 of your accounts</li>
-                <li>Each item includes a suggested conversation opener</li>
-              </ul>
-              <p class="form__cta-note">Your first digest is free. Plans start at $10/month.</p>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>
-
   <!-- FAQ -->
-  <section class="faq">
+  <section class="faq" id="faq">
     <div class="container">
       <h2 class="section__title">Questions</h2>
       <div class="faq__grid">
@@ -265,20 +111,16 @@
           <p>Google Alerts sends you raw links. Scoop gives you a synthesized brief with context on <em>why each signal matters to your specific deal</em>. It's the difference between a news feed and an intelligence analyst.</p>
         </details>
         <details class="faq__item">
-          <summary>What if my accounts are small / private companies?</summary>
+          <summary>What if my accounts are small or private companies?</summary>
           <p>Scoop works best with companies that have some public footprint. For smaller accounts, we surface signals from industry publications, job postings, social media, and regulatory filings that larger tools miss.</p>
         </details>
         <details class="faq__item">
-          <summary>Can I change my account list?</summary>
-          <p>Yes, at any time. Update your list and the next digest will reflect the changes. No lock-in, no waiting.</p>
-        </details>
-        <details class="faq__item">
           <summary>Do I need to install anything?</summary>
-          <p>No. Scoop is email-only. No app, no browser extension, no CRM plugin. It just shows up in your inbox every Monday morning.</p>
+          <p>No. Scoop is email-only. No app, no browser extension, no CRM plugin. It shows up in your inbox every Monday morning.</p>
         </details>
         <details class="faq__item">
           <summary>Can I cancel anytime?</summary>
-          <p>Yes. No contracts, no commitments. Cancel with one click and you won't be charged again.</p>
+          <p>Yes. Reply "stop" to any digest and you're out. No contracts, no commitments.</p>
         </details>
       </div>
     </div>
@@ -287,10 +129,7 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="container footer__inner">
-      <div class="footer__brand">
-        <span style="font-size:1.25rem;">🐶🗞️</span>
-        <span>Scoop</span>
-      </div>
+      <div class="footer__brand">🐶🗞️ <strong>Scoop</strong></div>
       <p class="footer__copy">&copy; 2026 Scoop. We fetch. You close.</p>
     </div>
   </footer>
