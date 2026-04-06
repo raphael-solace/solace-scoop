@@ -371,7 +371,7 @@ async def _rank_signals(
     product: str,
     seller_context: dict,
 ) -> list[dict]:
-    if len(items) <= 5:
+    if len(items) <= 3:
         return items
 
     buyer_personas = seller_context.get("buyer_personas", "decision-makers")
@@ -407,7 +407,7 @@ Rank them from most to least urgent/impactful. The ranking criteria:
 4. Signals that affect the PRIMARY buyer persona rank above secondary
 5. Signals where the "window" is closing soonest rank highest
 
-Return a JSON array of the indices (the "i" field) of the top 7 signals, in priority order:
+Return a JSON array of the indices (the "i" field) of the top 5 signals, in priority order:
 [0, 3, 7, ...]""",
         max_tokens=200,
     )
@@ -424,11 +424,11 @@ Return a JSON array of the indices (the "i" field) of the top 7 signals, in prio
                     if key not in seen:
                         seen.add(key)
                         ranked.append(items[idx])
-            return ranked if ranked else items[:7]
+            return ranked[:5] if ranked else items[:5]
     except (json.JSONDecodeError, ValueError):
         pass
 
-    return items[:7]
+    return items[:5]
 
 
 # ── Public API ───────────────────────────────

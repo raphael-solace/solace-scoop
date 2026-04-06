@@ -48,7 +48,7 @@ async def send_digest_email(user: dict, items: list[dict]) -> None:
         return
 
     html = render_digest(user, items)
-    subject = f"🐶🗞️ Your Scoop: {len(items)} signals this week"
+    subject = f"🐶🗞️ {len(items)} signals this week"
 
     # Run SMTP in a thread so we don't block the event loop
     loop = asyncio.get_event_loop()
@@ -102,56 +102,38 @@ def render_digest(user: dict, items: list[dict]) -> str:
         "blue": {"bg": "#eff6ff", "fg": "#3b82f6"},
     }
 
-    urgency_colors = {
-        "IMMEDIATE": {"bg": "#fef2f2", "fg": "#dc2626"},
-        "THIS_WEEK": {"bg": "#fffbeb", "fg": "#d97706"},
-        "THIS_MONTH": {"bg": "#eff6ff", "fg": "#2563eb"},
-        "THIS_QUARTER": {"bg": "#f8fafc", "fg": "#64748b"},
-    }
-
     items_html = ""
     for item in items:
         colors = tag_colors.get(item.get("tag_color", "blue"), tag_colors["blue"])
-        urgency = item.get("urgency", "")
-        uc = urgency_colors.get(urgency, urgency_colors["THIS_QUARTER"])
         is_risk = item.get("risk_or_opportunity", "") in ("risk", "both")
 
-        # Risk badge
-        risk_badge = ""
-        if is_risk:
-            risk_badge = '<span style="display:inline-block; font-size:10px; font-weight:600; padding:2px 6px; border-radius:100px; background:#fef2f2; color:#dc2626; margin-left:6px;">RISK</span>'
+        # Compact tag line: [Tag] [RISK] Company
+        risk_badge = ' <span style="font-size:10px; font-weight:700; color:#dc2626;">⚠ RISK</span>' if is_risk else ""
 
-        # Urgency badge
-        urgency_badge = ""
-        if urgency:
-            urgency_badge = f'<span style="display:inline-block; font-size:10px; font-weight:600; padding:2px 6px; border-radius:100px; background:{uc["bg"]}; color:{uc["fg"]}; margin-left:6px;">{urgency.replace("_", " ")}</span>'
+        # Why + window merged into one short block
+        why_text = item.get("why", "")
+        window = item.get("window", "")
+        if window:
+            why_text += f" <em style='color:#64748b;'>({window})</em>"
 
-        # Window
-        window_html = ""
-        if item.get("window"):
-            window_html = f'<p style="margin:8px 0 0; font-size:13px; color:#64748b; font-style:italic;">⏱ {item["window"]}</p>'
+        # Action line
+        action_html = ""
+        if item.get("suggested_action"):
+            action_html = f'<p style="margin:6px 0 0; font-size:12px; color:#6366f1; font-weight:600;">→ {item["suggested_action"]}</p>'
 
         # Opening line
-        opening_html = ""
+        opener_html = ""
         if item.get("opening_line"):
-            opening_html = f'<p style="margin:8px 0 0; font-size:13px; color:#475569;">💬 <em>"{item["opening_line"]}"</em></p>'
+            opener_html = f'<p style="margin:6px 0 0; font-size:12px; color:#64748b;">💬 <em>"{item["opening_line"]}"</em></p>'
 
         items_html += f"""
-        <tr><td style="padding:24px 32px; border-bottom:1px solid #f1f5f9;">
-          <table cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
-            <tr>
-              <td><span style="display:inline-block; font-size:11px; font-weight:600; padding:3px 8px; border-radius:100px; text-transform:uppercase; letter-spacing:0.04em; background-color:{colors['bg']}; color:{colors['fg']};">{item['tag']}</span>{risk_badge}{urgency_badge}</td>
-              <td style="padding-left:8px;"><span style="font-size:15px; font-weight:600; color:#0f172a;">{item['company']}</span></td>
-            </tr>
-          </table>
-          <p style="margin:0 0 12px; font-size:15px; line-height:1.6; color:#475569;">{item['headline']}</p>
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
-            <tr><td style="background:#eef2ff; padding:12px 16px; border-radius:6px; border-left:3px solid #6366f1;">
-              <p style="margin:0; font-size:14px; line-height:1.6; color:#0f172a;"><strong>Why this matters:</strong> {item['why']}</p>{window_html}
-            </td></tr>
-          </table>
-          {opening_html}
-          {"<p style='margin:8px 0 0; font-size:13px; line-height:1.5; color:#6366f1; font-weight:600;'>→ " + item['suggested_action'] + "</p>" if item.get('suggested_action') else ""}
+        <tr><td style="padding:16px 24px; border-bottom:1px solid #f1f5f9;">
+          <p style="margin:0 0 4px; font-size:11px;"><span style="display:inline; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors['bg']}; color:{colors['fg']}; text-transform:uppercase; letter-spacing:0.04em;">{item['tag']}</span>{risk_badge}</p>
+          <p style="margin:0 0 6px; font-size:14px; font-weight:700; color:#0f172a;">{item['company']}</p>
+          <p style="margin:0 0 8px; font-size:13px; line-height:1.5; color:#475569;">{item['headline']}</p>
+          <p style="margin:0; font-size:12px; line-height:1.5; color:#0f172a; background:#eef2ff; padding:8px 12px; border-radius:4px; border-left:3px solid #6366f1;">{why_text}</p>
+          {action_html}
+          {opener_html}
         </td></tr>"""
 
     company_count = len(user.get("companies", []))
@@ -160,20 +142,18 @@ def render_digest(user: dict, items: list[dict]) -> str:
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
-<tr><td align="center" style="padding:32px 16px;">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:12px; overflow:hidden;">
-  <tr><td style="padding:24px 32px; border-bottom:1px solid #f1f5f9; background:#f8fafc;">
-    <span style="font-size:24px;">🐶🗞️</span><br>
-    <span style="font-size:16px; font-weight:700; color:#0f172a;">Your Weekly Scoop</span><br>
-    <span style="font-size:13px; color:#94a3b8;">Week of {today.strftime('%B %d, %Y')}</span>
+<tr><td align="center" style="padding:24px 12px;">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:10px; overflow:hidden;">
+  <tr><td style="padding:16px 24px; border-bottom:1px solid #f1f5f9; background:#f8fafc;">
+    <span style="font-size:14px; font-weight:700; color:#0f172a;">🐶🗞️ Your Scoop</span>
+    <span style="font-size:12px; color:#94a3b8; float:right;">{today.strftime('%b %d, %Y')}</span>
   </td></tr>
-  <tr><td style="padding:24px 32px 0;">
-    <p style="margin:0; font-size:15px; line-height:1.6; color:#475569;">Hi {user_name}, here are the {len(items)} most important things at your accounts this week.</p>
+  <tr><td style="padding:16px 24px 8px;">
+    <p style="margin:0; font-size:13px; color:#475569;">Hi {user_name}, {len(items)} signals this week. Reply to ask follow-up questions.</p>
   </td></tr>
   {items_html}
-  <tr><td style="padding:20px 32px; background:#f8fafc; border-top:1px solid #f1f5f9; text-align:center;">
-    <p style="margin:0; font-size:13px; color:#94a3b8;">Tracking {company_count} accounts · Next digest: {next_monday.strftime('%B %d')}</p>
-    <p style="margin:8px 0 0; font-size:12px; color:#cbd5e1;">Reply "stop" to unsubscribe.</p>
+  <tr><td style="padding:12px 24px; background:#f8fafc; border-top:1px solid #f1f5f9; text-align:center;">
+    <p style="margin:0; font-size:11px; color:#94a3b8;">Tracking {company_count} accounts · Next: {next_monday.strftime('%b %d')} · Reply "stop" to unsubscribe</p>
   </td></tr>
 </table>
 </td></tr></table>
