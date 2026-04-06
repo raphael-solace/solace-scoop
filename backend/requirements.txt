@@ -1,0 +1,11 @@
+fastapi>=0.110,<1
+uvicorn[standard]>=0.27,<1
+httpx>=0.27,<1
+python-dotenv>=1.0,<2
+pydantic[email]>=2.6,<3
+
+# Future dependencies (uncomment when needed):
+# resend>=0.8,<1           # Email delivery
+# stripe>=8,<10            # Payments
+# supabase>=2,<3           # Database
+# jinja2>=3.1,<4           # Email template rendering
