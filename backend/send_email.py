@@ -102,24 +102,56 @@ def render_digest(user: dict, items: list[dict]) -> str:
         "blue": {"bg": "#eff6ff", "fg": "#3b82f6"},
     }
 
+    urgency_colors = {
+        "IMMEDIATE": {"bg": "#fef2f2", "fg": "#dc2626"},
+        "THIS_WEEK": {"bg": "#fffbeb", "fg": "#d97706"},
+        "THIS_MONTH": {"bg": "#eff6ff", "fg": "#2563eb"},
+        "THIS_QUARTER": {"bg": "#f8fafc", "fg": "#64748b"},
+    }
+
     items_html = ""
     for item in items:
         colors = tag_colors.get(item.get("tag_color", "blue"), tag_colors["blue"])
+        urgency = item.get("urgency", "")
+        uc = urgency_colors.get(urgency, urgency_colors["THIS_QUARTER"])
+        is_risk = item.get("risk_or_opportunity", "") in ("risk", "both")
+
+        # Risk badge
+        risk_badge = ""
+        if is_risk:
+            risk_badge = '<span style="display:inline-block; font-size:10px; font-weight:600; padding:2px 6px; border-radius:100px; background:#fef2f2; color:#dc2626; margin-left:6px;">RISK</span>'
+
+        # Urgency badge
+        urgency_badge = ""
+        if urgency:
+            urgency_badge = f'<span style="display:inline-block; font-size:10px; font-weight:600; padding:2px 6px; border-radius:100px; background:{uc["bg"]}; color:{uc["fg"]}; margin-left:6px;">{urgency.replace("_", " ")}</span>'
+
+        # Window
+        window_html = ""
+        if item.get("window"):
+            window_html = f'<p style="margin:8px 0 0; font-size:13px; color:#64748b; font-style:italic;">⏱ {item["window"]}</p>'
+
+        # Opening line
+        opening_html = ""
+        if item.get("opening_line"):
+            opening_html = f'<p style="margin:8px 0 0; font-size:13px; color:#475569;">💬 <em>"{item["opening_line"]}"</em></p>'
+
         items_html += f"""
         <tr><td style="padding:24px 32px; border-bottom:1px solid #f1f5f9;">
           <table cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
             <tr>
-              <td><span style="display:inline-block; font-size:11px; font-weight:600; padding:3px 8px; border-radius:100px; text-transform:uppercase; letter-spacing:0.04em; background-color:{colors['bg']}; color:{colors['fg']};">{item['tag']}</span></td>
+              <td><span style="display:inline-block; font-size:11px; font-weight:600; padding:3px 8px; border-radius:100px; text-transform:uppercase; letter-spacing:0.04em; background-color:{colors['bg']}; color:{colors['fg']};">{item['tag']}</span>{risk_badge}{urgency_badge}</td>
               <td style="padding-left:8px;"><span style="font-size:15px; font-weight:600; color:#0f172a;">{item['company']}</span></td>
             </tr>
           </table>
           <p style="margin:0 0 12px; font-size:15px; line-height:1.6; color:#475569;">{item['headline']}</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
             <tr><td style="background:#eef2ff; padding:12px 16px; border-radius:6px; border-left:3px solid #6366f1;">
-              <p style="margin:0; font-size:14px; line-height:1.6; color:#0f172a;"><strong>Why this matters:</strong> {item['why']}</p>
+              <p style="margin:0; font-size:14px; line-height:1.6; color:#0f172a;"><strong>Why this matters:</strong> {item['why']}</p>{window_html}
             </td></tr>
           </table>
-          {"<p style='margin:0; font-size:13px; line-height:1.5; color:#6366f1; font-weight:600;'>→ " + item['suggested_action'] + "</p>" if item.get('suggested_action') else ""}
+          {opening_html}
+          {"<p style='margin:8px 0 0; font-size:13px; line-height:1.5; color:#6366f1; font-weight:600;'>→ " + item['suggested_action'] + "</p>" if item.get('suggested_action') else ""}
         </td></tr>"""
 
     company_count = len(user.get("companies", []))
