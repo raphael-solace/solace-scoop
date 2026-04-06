@@ -114,11 +114,12 @@ def render_digest(user: dict, items: list[dict]) -> str:
             </tr>
           </table>
           <p style="margin:0 0 12px; font-size:15px; line-height:1.6; color:#475569;">{item['headline']}</p>
-          <table width="100%" cellpadding="0" cellspacing="0">
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
             <tr><td style="background:#eef2ff; padding:12px 16px; border-radius:6px; border-left:3px solid #6366f1;">
               <p style="margin:0; font-size:14px; line-height:1.6; color:#0f172a;"><strong>Why this matters:</strong> {item['why']}</p>
             </td></tr>
           </table>
+          {"<p style='margin:0; font-size:13px; line-height:1.5; color:#6366f1; font-weight:600;'>→ " + item['suggested_action'] + "</p>" if item.get('suggested_action') else ""}
         </td></tr>"""
 
     company_count = len(user.get("companies", []))
