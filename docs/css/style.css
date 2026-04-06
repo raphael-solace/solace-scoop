@@ -818,33 +818,103 @@ img, svg { display: block; }
    Responsive
    ============================================ */
 
+@media (max-width: 1024px) {
+  .pricing__grid {
+    grid-template-columns: 1fr 1fr;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .pricing__grid .pricing__card:last-child {
+    grid-column: 1 / -1;
+    max-width: 320px;
+    justify-self: center;
+  }
+}
+
 @media (max-width: 768px) {
   .nav__links a:not(.btn) { display: none; }
 
   .hero { padding: 120px 0 60px; }
   .hero__title br { display: none; }
 
+  .section__title { font-size: 1.75rem; }
+  .section__subtitle { font-size: 1rem; }
+
   .problem__grid,
-  .steps__grid,
-  .pricing__grid {
+  .steps__grid {
     grid-template-columns: 1fr;
   }
 
-  .proof__logos { gap: var(--space-lg); }
+  .pricing__grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+  }
+
+  .pricing__grid .pricing__card:last-child {
+    max-width: none;
+  }
+
+  .steps__grid { gap: var(--space-xl); }
+
+  .problem__card { padding: var(--space-xl); }
+
+  .proof__logos {
+    gap: var(--space-md);
+    font-size: 0.875rem;
+  }
+
+  .digest { margin-top: var(--space-xl); }
+  .digest__why { font-size: 0.8125rem; }
+
+  .hero__subtitle { font-size: 1rem; }
 
   .footer__inner {
     flex-direction: column;
     gap: var(--space-md);
     text-align: center;
   }
+
+  /* Stack all sections tighter on mobile */
+  .problem,
+  .steps,
+  .example,
+  .signup,
+  .pricing,
+  .faq {
+    padding: var(--space-3xl) 0;
+  }
 }
 
 @media (max-width: 480px) {
   .container { padding: 0 var(--space-md); }
-  .form { padding: var(--space-xl); }
-  .digest__header { padding: var(--space-lg); }
-  .digest__item { padding: var(--space-lg); }
-  .digest__intro { padding: var(--space-lg) var(--space-lg) 0; }
+
+  .hero { padding: 100px 0 48px; }
+  .hero__title { font-size: 1.75rem; }
+  .hero__badge { font-size: 0.75rem; padding: 0.25rem 0.75rem; }
+  .btn--lg { padding: 0.875rem 1.5rem; font-size: 1rem; }
+
+  .form { padding: var(--space-lg); }
+  .form__textarea { min-height: 120px; }
+
+  .digest__header { padding: var(--space-md); }
+  .digest__item { padding: var(--space-md); }
+  .digest__intro { padding: var(--space-md) var(--space-md) 0; }
+  .digest__footer { padding: var(--space-md); }
+  .digest__why { padding: var(--space-sm) var(--space-md); font-size: 0.8125rem; }
+  .digest__signal { flex-wrap: wrap; }
+
+  .pricing__card { padding: var(--space-xl); }
+
+  .nav__inner { height: 56px; }
+
+  .faq__item summary { font-size: 0.9375rem; }
+  .faq__item p { font-size: 0.875rem; padding-right: 0; }
+
+  .proof { padding: var(--space-xl) 0; }
+  .proof__logos { gap: var(--space-sm); }
+  .proof__logos span { font-size: 0.75rem; }
 }
 
 /* ============================================

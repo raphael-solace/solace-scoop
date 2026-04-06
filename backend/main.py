@@ -97,13 +97,22 @@ async def preview(req: PreviewRequest):
     if not req.companies:
         raise HTTPException(400, "At least one company is required")
 
+    companies = [c.strip() for c in req.companies if c.strip()]
+
+    # Save user to Supabase if configured
+    if os.getenv("SUPABASE_URL"):
+        from db import create_user, get_user_by_email
+        existing = await get_user_by_email(req.email)
+        if not existing:
+            await create_user(req.email, req.product, companies)
+
     # Limit to first 3 for preview
-    companies = [c.strip() for c in req.companies if c.strip()][:3]
-    items = await generate_digest_preview(companies, req.product)
+    preview_companies = companies[:3]
+    items = await generate_digest_preview(preview_companies, req.product)
 
     return PreviewResponse(
         date=_today_formatted(),
-        company_count=len(req.companies),
+        company_count=len(companies),
         items=[DigestItem(**item) for item in items],
     )
 

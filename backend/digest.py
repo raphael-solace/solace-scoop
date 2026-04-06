@@ -51,25 +51,27 @@ async def generate_digest_preview(
     return items
 
 
-async def generate_full_digest(
-    user_email: Optional[str] = None,
-) -> dict:
+async def generate_digest_for_user(user: dict) -> list[dict]:
     """
-    Run the full digest pipeline for all users (or a specific user).
-
-    In production, this would:
-    1. Fetch users from the database
-    2. For each user, query Perplexity for each company
-    3. Rank and filter to top signals
-    4. Render HTML email
-    5. Send via Resend
-
-    Returns:
-      {"processed": int}
+    Generate a full digest for a single user.
+    user = {"email": ..., "product": ..., "companies": [{"name": ...}, ...]}
     """
-    # TODO: Implement database integration
-    # For now, return a stub
-    return {"processed": 0}
+    companies = [c["name"] for c in user.get("companies", [])]
+    if not companies:
+        return []
+
+    product = user.get("product", "our product")
+    tasks = [_query_company(company, product) for company in companies]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    items = []
+    for result in results:
+        if isinstance(result, Exception):
+            continue
+        if result:
+            items.append(result)
+
+    return items
 
 
 async def _query_company(company: str, product: str) -> Optional[dict]:

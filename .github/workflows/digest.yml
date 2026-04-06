@@ -1,0 +1,40 @@
+name: Weekly Digest
+
+on:
+  # Every Sunday at 11pm UTC (Monday 7am in most timezones)
+  schedule:
+    - cron: '0 23 * * 0'
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      user_email:
+        description: 'Process a specific user (leave blank for all)'
+        required: false
+        type: string
+
+jobs:
+  send-digests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run digest pipeline
+        env:
+          PPLX_KEY: ${{ secrets.PPLX_KEY }}
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python run_digest.py ${{ inputs.user_email && format('--email {0}', inputs.user_email) || '' }}

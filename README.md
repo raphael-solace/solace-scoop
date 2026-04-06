@@ -17,21 +17,28 @@
 ## Project structure
 
 ```
-docs/                    ← Landing page (GitHub Pages)
+docs/                       ← Landing page (GitHub Pages)
   index.html
   css/style.css
   js/app.js
   favicon.svg
 
-backend/                 ← API server (FastAPI)
-  main.py                  Endpoints: /api/preview, /api/digest, /health
-  digest.py                Perplexity pipeline + signal synthesis
+backend/                    ← API server (FastAPI)
+  main.py                     Endpoints: /api/preview, /api/digest, /health
+  digest.py                   Perplexity pipeline + signal synthesis
+  db.py                       Supabase database layer
+  send_email.py               Resend email delivery
+  run_digest.py               CLI entrypoint for cron
+  schema.sql                  Supabase migration (run in SQL editor)
   templates/
-    email.html             Jinja2 email template (email-client safe)
+    email.html                Email template (email-client safe)
   requirements.txt
 
-.env.example             ← All environment variables documented
-brief.md                 ← Original product brief
+.github/workflows/
+  digest.yml                ← Weekly cron (GitHub Actions)
+
+.env.example                ← All environment variables documented
+brief.md                    ← Original product brief
 ```
 
 ## Quick start
