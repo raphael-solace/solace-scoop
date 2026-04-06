@@ -201,6 +201,8 @@ img, svg { display: block; }
 
 .nav__icon { width: 28px; height: 28px; }
 
+.nav__emoji { font-size: 1.375rem; line-height: 1; }
+
 .nav__links {
   display: flex;
   align-items: center;
@@ -363,15 +365,13 @@ img, svg { display: block; }
 .steps__item { text-align: center; }
 
 .steps__number {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 1.125rem;
-  font-weight: 700;
+  background: var(--color-primary-light);
+  font-size: 1.5rem;
   border-radius: 50%;
   margin: 0 auto var(--space-lg);
 }

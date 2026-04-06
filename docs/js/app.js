@@ -171,7 +171,7 @@
   // ── Digest HTML builders ───────────────────
   function buildDigestHeader(date) {
     return '<div class="digest__header">' +
-      '<div class="digest__logo"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gd" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#4f46e5"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#gd)"/><path d="M16 7a9 9 0 0 1 0 18 9 9 0 0 1 0-18zm0 3a6 6 0 0 0 0 12 6 6 0 0 0 0-12zm0 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" fill="white" opacity="0.95"/><circle cx="16" cy="16" r="1.2" fill="white"/></svg></div>' +
+      '<div class="digest__logo"><span style="font-size:1.5rem;">\uD83D\uDC36\uD83D\uDDDE\uFE0F</span></div>' +
       '<div><div class="digest__title">Your Sample Scoop</div>' +
       '<div class="digest__date">' + date + '</div></div></div>';
   }
