@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solace Scoop — Agent Mesh Account Intelligence</title>
-  <meta name="description" content="Watch a mesh of AI agents research any company in real time. Powered by Solace Agent Mesh.">
-  <meta property="og:title" content="Solace Scoop — Agent Mesh Account Intelligence">
-  <meta property="og:description" content="Watch a mesh of AI agents research any company in real time. Powered by Solace Agent Mesh.">
+  <title>Solace Scoop — Stay ahead of your accounts</title>
+  <meta name="description" content="AI agents working in parallel deliver a live brief on any company. Powered by Solace Agent Mesh.">
+  <meta property="og:title" content="Solace Scoop — Stay ahead of your accounts">
+  <meta property="og:description" content="AI agents working in parallel deliver a live brief on any company. Powered by Solace Agent Mesh.">
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F50D;</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F4E1;</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,100 +17,134 @@
 <body>
 
   <!-- Nav -->
-  <nav class="nav">
-    <div class="nav__inner">
+  <nav class="nav" id="nav">
+    <div class="container nav__inner">
       <a href="#" class="nav__logo">
         <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" class="nav__logo-img">
         <span class="nav__badge">SCOOP</span>
       </a>
-      <button class="nav__back" id="nav-back" hidden>&larr; Back</button>
+      <div class="nav__links">
+        <a href="#how-it-works">How it works</a>
+        <a href="#demo" class="btn btn--sm">Try it</a>
+      </div>
     </div>
   </nav>
 
-  <!-- Screen: Welcome -->
-  <div class="screen active" id="screen-welcome">
-    <div class="screen__inner">
-      <div class="welcome__label">AGENT MESH ACCOUNT INTELLIGENCE</div>
-      <div class="welcome__sub">Powered by Solace Agent Mesh</div>
-      <h1 class="welcome__title">
-        Research any company with<br>
-        <em>a mesh of AI agents.</em>
+  <!-- Hero -->
+  <header class="hero" id="hero">
+    <div class="container">
+      <div class="hero__label">POWERED BY SOLACE AGENT MESH</div>
+      <h1 class="hero__title">
+        Stay ahead of<br><em>every account.</em>
       </h1>
-      <p class="welcome__desc">
-        Five specialized agents work in parallel — researching people, financials, competitors, risks, and strategy — then synthesize a unified intelligence brief. In seconds.
+      <p class="hero__subtitle">
+        A mesh of AI agents delivers a live brief on any company — people moves, financials, competitive signals, risks, and growth trends. All in seconds.
       </p>
-      <button class="btn-primary" id="btn-start">Start exploring &rarr;</button>
+      <form id="hero-form" class="hero__form" novalidate>
+        <input class="hero__input" type="text" id="hero-company" placeholder="Enter a company name..." autocomplete="off">
+        <button type="submit" class="btn btn--lg" id="hero-btn" disabled>Get the scoop</button>
+      </form>
+      <p class="hero__note">Free. No signup. Powered by Perplexity + Solace Agent Mesh.</p>
     </div>
-  </div>
+  </header>
 
-  <!-- Screen: Company Input -->
-  <div class="screen" id="screen-input">
-    <div class="screen__inner">
-      <h1 class="screen__title">Which company do you want to research?</h1>
-      <p class="screen__subtitle">Our agent mesh will run five parallel research tracks and deliver a unified brief.</p>
-      <div class="input-card">
-        <label class="input-card__label" for="company-name">Company name</label>
-        <input class="input-card__input" type="text" id="company-name" placeholder="e.g. Snowflake, Databricks, Stripe..." autocomplete="off" autofocus>
-        <label class="input-card__label" for="context-input" style="margin-top: 1rem;">Context <span class="input-card__hint">(optional)</span></label>
-        <input class="input-card__input" type="text" id="context-input" placeholder="e.g. We sell cloud ERP to their finance team...">
-        <div class="input-card__key-row" id="key-row" hidden>
-          <label class="input-card__label" for="pplx-key" style="margin-top: 1rem;">Perplexity API Key</label>
-          <input class="input-card__input" type="password" id="pplx-key" placeholder="pplx-...">
-          <div class="input-card__hint" style="margin-top: 0.375rem;">Free at <a href="https://www.perplexity.ai/settings/api" target="_blank" style="color: var(--green);">perplexity.ai/settings/api</a>. Stored locally in your browser.</div>
+  <!-- How It Works -->
+  <section class="steps" id="how-it-works">
+    <div class="container">
+      <h2 class="section__title">How Scoop works</h2>
+      <p class="section__subtitle">Five agents. One mesh. Seconds to insight.</p>
+      <div class="steps__grid">
+        <div class="steps__item">
+          <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg></div>
+          <h3>People Intel</h3>
+          <p>C-suite changes, new hires, departures, and key decision-makers.</p>
         </div>
-        <button class="btn-primary btn--full" id="btn-research" disabled>Launch agent mesh &rarr;</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Screen: Agent Mesh Running -->
-  <div class="screen" id="screen-mesh">
-    <div class="screen__inner screen__inner--wide">
-      <div class="mesh__header">
-        <h1 class="mesh__title">Agent mesh researching <span id="mesh-company" class="mesh__company"></span></h1>
-        <p class="mesh__subtitle">5 agents working in parallel via Solace Event Mesh</p>
-      </div>
-
-      <div class="mesh__grid" id="mesh-grid">
-        <!-- Agents rendered by JS -->
-      </div>
-
-      <div class="mesh__orchestrator" id="mesh-orchestrator">
-        <div class="agent-card agent-card--orchestrator">
-          <div class="agent-card__icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4m-2.83-7.17l-2.83 2.83m-8.48 8.48l-2.83 2.83m0-14.14l2.83 2.83m8.48 8.48l2.83 2.83"/></svg>
-          </div>
-          <div class="agent-card__info">
-            <h3 class="agent-card__name">Strategy Orchestrator</h3>
-            <div class="agent-card__status" id="orchestrator-status">Waiting for agents...</div>
-          </div>
-          <div class="agent-card__spinner" id="orchestrator-spinner"></div>
+        <div class="steps__item">
+          <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div>
+          <h3>Corporate Signals</h3>
+          <p>Revenue, funding, M&amp;A, partnerships, and expansion signals.</p>
+        </div>
+        <div class="steps__item">
+          <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <h3>Market Position</h3>
+          <p>Competitors, product launches, industry trends, and wins.</p>
+        </div>
+        <div class="steps__item">
+          <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <h3>Risk &amp; Compliance</h3>
+          <p>Lawsuits, breaches, regulatory actions, and reputational risks.</p>
+        </div>
+        <div class="steps__item">
+          <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg></div>
+          <h3>Strategy Brief</h3>
+          <p>An orchestrator synthesizes everything into an actionable summary.</p>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen: Results -->
-  <div class="screen" id="screen-results">
-    <div class="screen__inner screen__inner--wide">
-      <div class="results__header">
-        <h1 class="results__title">Intelligence Brief: <span id="results-company"></span></h1>
-        <p class="results__subtitle">Compiled by 5 agents via Solace Agent Mesh</p>
+  <!-- Demo -->
+  <section class="demo" id="demo">
+    <div class="container">
+      <h2 class="section__title">Try it now</h2>
+      <p class="section__subtitle">Type any company and watch the agent mesh go to work.</p>
+
+      <form id="demo-form" class="demo__form" novalidate>
+        <div class="demo__input-row">
+          <input class="demo__input" type="text" id="demo-company" placeholder="e.g. Snowflake, Databricks, Stripe..." autocomplete="off">
+          <button type="submit" class="btn btn--lg" id="demo-btn" disabled>
+            <span class="btn__text">Get the scoop</span>
+            <span class="btn__loader" hidden>
+              <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
+              Agents working...
+            </span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Agent Mesh (hidden until running) -->
+      <div id="mesh-section" class="mesh" hidden>
+        <div class="mesh__header">
+          <h3 class="mesh__title">Agent mesh updating on <span id="mesh-company" class="mesh__company"></span></h3>
+          <p class="mesh__subtitle">5 agents working in parallel via Solace Event Mesh</p>
+        </div>
+        <div class="mesh__grid" id="mesh-grid"></div>
+        <div class="mesh__orchestrator">
+          <div class="agent-card agent-card--orchestrator">
+            <div class="agent-card__icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4m-2.83-7.17l-2.83 2.83m-8.48 8.48l-2.83 2.83m0-14.14l2.83 2.83m8.48 8.48l2.83 2.83"/></svg>
+            </div>
+            <div class="agent-card__info">
+              <h3 class="agent-card__name">Strategy Orchestrator</h3>
+              <div class="agent-card__status" id="orchestrator-status">Waiting for agents...</div>
+            </div>
+            <div class="agent-card__spinner" id="orchestrator-spinner"></div>
+          </div>
+        </div>
       </div>
-      <div class="results__grid" id="results-grid">
-        <!-- Filled by JS -->
-      </div>
-      <div class="results__strategy" id="results-strategy">
-        <!-- Filled by JS -->
-      </div>
-      <div class="results__actions">
-        <button class="btn-primary" id="btn-again">&larr; Research another company</button>
+
+      <!-- Results (hidden until ready) -->
+      <div id="results-section" class="results" hidden>
+        <div class="results__header">
+          <h3 class="results__title">The scoop on <span id="results-company"></span></h3>
+          <p class="results__subtitle">Compiled by 5 agents via Solace Agent Mesh</p>
+        </div>
+        <div class="results__grid" id="results-grid"></div>
+        <div class="results__strategy" id="results-strategy"></div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Mesh lines SVG overlay -->
-  <svg class="mesh-lines" id="mesh-lines" xmlns="http://www.w3.org/2000/svg"></svg>
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" style="height: 20px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+        <strong>Scoop</strong>
+      </div>
+      <p class="footer__copy">Powered by Solace Agent Mesh + Perplexity AI</p>
+    </div>
+  </footer>
 
   <script src="js/app.js"></script>
 </body>
