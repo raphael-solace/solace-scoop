@@ -1,55 +1,45 @@
-# Scoop 🐶🗞️
+# Solace Scoop
 
-**Actionable account news for sales teams.**
+**Agent Mesh Account Intelligence — powered by Solace Agent Mesh.**
 
-Scoop monitors your key accounts and emails you a weekly brief with the signals that matter: leadership changes, new initiatives, hiring surges, funding rounds, partnerships, and more. Each signal includes **why it matters for your deal** and **what to do next**.
+A live demo of event-driven AI agents working in parallel to research any company. Five specialized agents (People Intel, Corporate Intel, Market & Competitive, Risk & Compliance, Hiring & Growth) each publish their findings via Solace PubSub+, then a Strategy Orchestrator synthesizes everything into a unified intelligence brief.
 
-Works for any industry. SaaS, insurance, manufacturing, consulting, financial services, healthcare, logistics. If you sell B2B, Scoop works for you.
-
-**[Try it free](https://noptus.github.io/Scoop/)** &middot; No credit card, no install, just email.
+**[Try it live](https://raphael-solace.github.io/solace-scoop/)** — free, no signup.
 
 ---
 
 ## How it works
 
-1. Enter your email, what you sell, and your top 10 accounts
-2. Scoop researches your company to understand your buyers and what triggers a sale
-3. Every Monday, you get an email with the most actionable signals across your accounts
-4. Reply to any digest to ask follow-up questions
+1. Enter a company name (and optional context about what you sell)
+2. Five AI agents launch in parallel via Solace Event Mesh
+3. Each agent researches a different dimension (people, financials, market, risks, hiring)
+4. A Strategy Orchestrator synthesizes all findings into an actionable brief
+5. Results display in real time as each agent completes
 
-## What makes it different
+## Architecture
 
-| Google Alerts | Scoop |
-|---|---|
-| Raw links, no context | "Why this matters for your deal" |
-| Every mention, mostly noise | Only signals relevant to what you sell |
-| Same alert for everyone | Tailored to your product, your buyers, your industry |
-| No action items | "Reach out to [Name], [Title] about..." |
+```
+User Input
+    |
+    v
+[Solace Event Mesh / PubSub+]
+    |
+    +---> People Intel Agent --------+
+    +---> Corporate Intel Agent -----+
+    +---> Market & Competitive Agent-+--> Strategy Orchestrator --> Brief
+    +---> Risk & Compliance Agent ---+
+    +---> Hiring & Growth Agent -----+
+```
 
-## Examples across industries
+Each agent publishes events to the mesh as it completes its research. The orchestrator subscribes to all agent completion events and synthesizes the final brief once all agents have reported.
 
-**SaaS sales rep selling a data platform:**
-> **[People Move] Acme Corp** — New VP of Engineering appointed. Previously led cloud migration at a Fortune 500. He's likely re-evaluating the data stack.
->
-> &rarr; *Reach out to introduce your platform before vendor reviews start.*
+## Tech Stack
 
-**Insurance broker tracking mid-market accounts:**
-> **[Expansion] Meridian Logistics** — Opened 3 new distribution centers in the Southeast and hired 200 warehouse staff.
->
-> &rarr; *Contact their Director of Risk. New facilities mean new coverage needs.*
+- **Frontend**: Vanilla HTML/CSS/JS (zero dependencies)
+- **AI**: Perplexity API (`sonar` model) for live web research
+- **Design**: Solace brand (Instrument Serif + Plus Jakarta Sans, Solace green `#00C895`)
+- **Hosting**: GitHub Pages (static, free)
 
-**Consulting firm watching enterprise clients:**
-> **[Strategic] Northwind Financial** — Announced a $40M digital transformation program to modernize core banking systems by 2027.
->
-> &rarr; *Reach out to the program director. They'll need implementation partners.*
+## License
 
-**Manufacturing supplier tracking OEM accounts:**
-> **[M&A] Titan Automotive** — Acquired a battery component supplier in South Korea, signaling a push into EV production.
->
-> &rarr; *Contact their Head of Procurement. Supply chain is being rebuilt.*
-
----
-
-## Open source
-
-Scoop is MIT licensed. See [CONTRIBUTING.md](CONTRIBUTING.md) for self-hosting instructions and how to contribute.
+MIT
