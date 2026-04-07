@@ -34,17 +34,12 @@
   <header class="hero" id="hero">
     <div class="container">
       <div class="hero__label">POWERED BY SOLACE AGENT MESH</div>
-      <h1 class="hero__title">
-        Stay ahead of<br><em>every account.</em>
-      </h1>
-      <p class="hero__subtitle">
-        A mesh of AI agents delivers a live brief on any company — people moves, financials, competitive signals, risks, and growth trends. All in seconds.
-      </p>
+      <h1 class="hero__title">Stay ahead of <em>every account.</em></h1>
+      <p class="hero__subtitle">A mesh of AI agents delivers a live brief on any company — people moves, financials, competitive signals, risks, and growth trends. All in seconds.</p>
       <form id="hero-form" class="hero__form" novalidate>
         <input class="hero__input" type="email" id="hero-email" placeholder="you@company.com" required autocomplete="email">
         <button type="submit" class="btn btn--lg">Get started</button>
       </form>
-      <p class="hero__note">Free. No credit card. No install.</p>
     </div>
   </header>
 
@@ -100,7 +95,7 @@
             <input class="setup-form__input" type="url" id="seller-url" placeholder="e.g. https://solace.com">
           </div>
           <div class="setup-form__field setup-form__field--full">
-            <label class="setup-form__label" for="companies">Companies to track <span class="setup-form__hint">one per line, up to 10</span></label>
+            <label class="setup-form__label" for="companies">Companies to get news on <span class="setup-form__hint">one per line, up to 10</span></label>
             <textarea class="setup-form__textarea" id="companies" rows="6" placeholder="Snowflake&#10;Databricks&#10;Stripe&#10;Confluent&#10;HubSpot&#10;Datadog" required></textarea>
           </div>
         </div>
@@ -115,11 +110,27 @@
     </div>
   </section>
 
-  <!-- Results (rendered by JS below the form) -->
+  <!-- Results -->
   <section id="results-section" class="results-section" hidden>
     <div class="container">
-      <!-- Per-company results injected here -->
       <div id="results-container"></div>
+
+      <!-- Subscribe CTA (shown after all results) -->
+      <div id="subscribe-cta" class="subscribe-cta" hidden>
+        <div class="subscribe-cta__card">
+          <h3 class="subscribe-cta__title">Get this brief every week</h3>
+          <p class="subscribe-cta__desc">We'll email you an updated scoop on these companies every Monday morning. Same agents, fresh data.</p>
+          <div class="subscribe-cta__email" id="subscribe-email-display"></div>
+          <div class="subscribe-cta__actions">
+            <button class="btn btn--lg" id="btn-subscribe">Yes, subscribe me</button>
+            <button class="btn-text" id="btn-no-thanks">No thanks</button>
+          </div>
+          <div id="subscribe-confirmed" class="subscribe-cta__confirmed" hidden>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green)"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>You're subscribed! First email arrives Monday.</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
