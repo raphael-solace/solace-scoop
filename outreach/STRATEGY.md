@@ -1,4 +1,4 @@
-# Scoop — LinkedIn Outreach Strategy
+# Scoop - LinkedIn Outreach Strategy
 
 ## Ideal Customer Profile (ICP)
 
@@ -68,7 +68,7 @@ Show what a Google Alert gives you vs. what Scoop gives you for the same company
 
 **DO NOT cold pitch.** The sequence:
 
-1. **Engage first** — Like/comment on 3-5 of their posts over 1-2 weeks
+1. **Engage first** - Like/comment on 3-5 of their posts over 1-2 weeks
 2. **Connect** with a note: "Hey [Name], I keep seeing your takes on [topic]. I'm building something for AEs and your perspective would be useful. Happy to connect."
 3. **After they accept** (wait 2-3 days): Share a real Scoop output for one of their customers: "Ran this on [their company's likely customer]. Thought it might be useful for your next call."
 4. **If they engage**: "We're giving early access to sales leaders who want to try it. Free, no strings. Want in?"
@@ -115,14 +115,14 @@ Filter by:
 
 ### Connection request (max 300 chars)
 ```
-Hey {first_name} — I'm building an account intelligence tool for AEs. Your perspective on {something_specific_from_their_profile} would be really valuable. Happy to connect.
+Hey {first_name} - I'm building an account intelligence tool for AEs. Your perspective on {something_specific_from_their_profile} would be really valuable. Happy to connect.
 ```
 
 ### First message after connection (wait 2-3 days)
 ```
 Hey {first_name}, thanks for connecting.
 
-I ran a quick test — pulled the latest signals on {one_of_their_likely_accounts}:
+I ran a quick test - pulled the latest signals on {one_of_their_likely_accounts}:
 
 {paste_one_signal_from_scoop}
 
@@ -131,7 +131,7 @@ This is what we send every Monday. Free for now, takes 2 min to set up. Worth tr
 
 ### Follow-up if no response (wait 5 days)
 ```
-No worries if the timing's off. Just wanted to share this — we found {interesting_signal} about {company}. Thought it might be useful before your next call.
+No worries if the timing's off. Just wanted to share this - we found {interesting_signal} about {company}. Thought it might be useful before your next call.
 ```
 
 ### If they say yes
@@ -140,5 +140,5 @@ Here's the link: https://noptus.github.io/scoop
 
 Just drop your email, what you sell, and your top 10 accounts. First digest lands Monday.
 
-Let me know what you think after the first one — brutal honesty welcome.
+Let me know what you think after the first one - brutal honesty welcome.
 ```

@@ -1,5 +1,5 @@
 /* ============================================
-   Solace Scoop — Design System
+   Solace Scoop - Design System
    ============================================ */
 
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -108,7 +108,7 @@ ul { list-style: none; }
 /* ── Steps ───────────────────────────── */
 
 .steps { padding: 5rem 0; background: var(--gray-50); }
-.steps__grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-top: 3rem; }
+.steps__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem; }
 .steps__item { text-align: center; }
 .steps__icon {
   width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
@@ -234,7 +234,7 @@ ul { list-style: none; }
 }
 .agent-details__body { padding: 0 1rem 1rem; }
 
-/* Result cards (strategy brief — primary output) */
+/* Result cards (strategy brief - primary output) */
 
 .result-card {
   background: var(--white); border: 1px solid var(--gray-200);

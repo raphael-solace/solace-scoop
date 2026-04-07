@@ -1,5 +1,5 @@
 /* ============================================
-   Solace Scoop — Agent Mesh Demo
+   Solace Scoop - Agent Mesh Demo
    ============================================ */
 (function () {
   'use strict';
@@ -14,23 +14,27 @@
   var AGENTS = [
     { id: 'people', name: 'People Intel',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
-      prompt: function (co, s) { return 'Research ' + co + ' — KEY PEOPLE update.\n- C-suite (name, tenure, background)\n- Recent exec changes (last 6 months)\n- Key enterprise/tech decision-makers\n' + (s ? '\nSeller context: ' + s + '\n' : '') + '\nMarkdown with ## headers and bullets. Max 200 words.'; }
+      prompt: function (co, s) { return 'Research ' + co + ': KEY PEOPLE.\n- Current C-suite (name, tenure, background)\n- Recent executive changes (last 6 months): departures, new hires, promotions\n- Who makes enterprise/technology purchasing decisions?\n' + (s ? '\nThe seller context is: ' + s + '. Identify which people at ' + co + ' would be the right contacts for this product.\n' : '') + '\nMarkdown with ## headers and bullets. Be specific with names, titles, and dates. Max 200 words.'; }
     },
     { id: 'corporate', name: 'Corporate Signals',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>',
-      prompt: function (co, s) { return 'Research ' + co + ' — CORPORATE & FINANCIAL update.\n- Revenue, valuation, funding\n- Earnings, M&A, partnerships\n- Expansion/contraction signals\n' + (s ? '\nSeller context: ' + s + '\n' : '') + '\nMarkdown with ## headers and bullets. Max 200 words.'; }
+      prompt: function (co, s) { return 'Research ' + co + ': CORPORATE & FINANCIAL signals.\n- Revenue, valuation, recent funding\n- Earnings, M&A activity, strategic deals\n- Expansion or contraction signals (hiring surges, layoffs, new offices)\n' + (s ? '\nThe seller context is: ' + s + '. Highlight any financial signals that would create an opening to sell this product to ' + co + '.\n' : '') + '\nMarkdown with ## headers and bullets. Be specific with numbers and dates. Max 200 words.'; }
     },
     { id: 'market', name: 'Market & Competitive',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
-      prompt: function (co, s) { return 'Research ' + co + ' — MARKET & COMPETITIVE update.\n- Competitors and differentiation\n- Market position, product launches\n- Industry trends\n' + (s ? '\nSeller context: ' + s + '\n' : '') + '\nMarkdown with ## headers and bullets. Max 200 words.'; }
+      prompt: function (co, s) { return 'Research ' + co + ': MARKET & COMPETITIVE position.\n- Primary competitors and how ' + co + ' differentiates\n- Recent product launches or major announcements\n- Industry trends affecting their business\n' + (s ? '\nThe seller context is: ' + s + '. Identify competitive dynamics that would make ' + co + ' a good prospect for this product.\n' : '') + '\nMarkdown with ## headers and bullets. Max 200 words.'; }
     },
     { id: 'risk', name: 'Risk & Compliance',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
-      prompt: function (co, s) { return 'Research ' + co + ' — RISK & COMPLIANCE update.\n- Lawsuits, regulatory actions\n- Breaches, security incidents\n- Financial risk signals\n' + (s ? '\nSeller context: ' + s + '\n' : '') + '\nMarkdown with ## headers and bullets. If no risks, say so. Max 200 words.'; }
+      prompt: function (co, s) { return 'Research ' + co + ': RISK & COMPLIANCE.\n- Lawsuits, regulatory actions, compliance issues\n- Data breaches, security incidents\n- Reputational risks, financial risk signals\n' + (s ? '\nThe seller context is: ' + s + '. Note any risks that could either block a deal or create urgency to buy.\n' : '') + '\nMarkdown with ## headers and bullets. If no major risks, say so. Max 200 words.'; }
     },
     { id: 'hiring', name: 'Hiring & Growth',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>',
-      prompt: function (co, s) { return 'Research ' + co + ' — HIRING & GROWTH update.\n- Hiring velocity\n- Key departments, geographic expansion\n- Senior roles signaling strategy\n- Tech stack from job postings\n' + (s ? '\nSeller context: ' + s + '\n' : '') + '\nMarkdown with ## headers and bullets. Max 200 words.'; }
+      prompt: function (co, s) { return 'Research ' + co + ': HIRING & GROWTH signals.\n- Hiring velocity (growing, shrinking, flat?)\n- Key departments hiring heavily\n- Geographic expansion, new offices\n- Senior roles that signal strategic initiatives\n' + (s ? '\nThe seller context is: ' + s + '. Highlight hiring patterns that suggest ' + co + ' is investing in areas where this product would help.\n' : '') + '\nMarkdown with ## headers and bullets. Max 200 words.'; }
+    },
+    { id: 'news', name: 'Recent News',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>',
+      prompt: function (co, s) { return 'Research the latest news about ' + co + ' from the past 30 days.\n- Major announcements, press releases, product updates\n- Notable media coverage or analyst commentary\n- Anything a salesperson should reference in a conversation with ' + co + '\n' + (s ? '\nThe seller context is: ' + s + '. Focus on news that creates a natural conversation opener when selling this product to ' + co + '.\n' : '') + '\nMarkdown with ## headers and bullets. Be specific with dates and sources. Max 200 words.'; }
     }
   ];
 
@@ -146,7 +150,7 @@
     block.innerHTML =
       '<div class="company-block__header">'
       +   '<h3 class="company-block__title">The scoop on <em>' + esc(company) + '</em></h3>'
-      +   '<p class="company-block__subtitle">5 agents via Solace Agent Mesh</p>'
+      +   '<p class="company-block__subtitle">6 agents via Solace Agent Mesh</p>'
       + '</div>'
       + '<div class="mesh" id="mesh-' + companyIdx + '">'
       +   '<div class="mesh__grid" id="grid-' + companyIdx + '"></div>'
@@ -187,7 +191,7 @@
     var agentResults = {};
     var completed = 0;
     var orchStatus = document.getElementById('orch-status-' + companyIdx);
-    var sysPrm = 'You are a specialized agent in a Solace Agent Mesh. Be concise, factual, use markdown ## headers and bullet points.';
+    var sysPrm = 'You are a specialized agent in a Solace Agent Mesh, helping salespeople stay informed about their accounts. Be concise, factual, and focus on signals that matter for sales conversations. Use markdown ## headers and bullet points.';
 
     AGENTS.forEach(function (agent, idx) {
       setTimeout(function () {
@@ -216,10 +220,16 @@
     var findings = '';
     AGENTS.forEach(function (a) { findings += '\n\n## ' + a.name + '\n' + (agentResults[a.id] || '(no data)'); });
 
-    var sysPrm = 'You are the Strategy Orchestrator in a Solace Agent Mesh. Synthesize agent findings into a clear, actionable brief. Use markdown ## headers and bullet points.';
-    var usrPrm = 'Based on these agent findings about ' + company + ', write an ACCOUNT BRIEF.\n\nAGENT FINDINGS:' + findings + '\n\n'
-      + (sellerContext ? 'SELLER CONTEXT: ' + sellerContext + '\n\n' : '')
-      + 'Sections:\n## The Big Picture\n2-3 sentences.\n## What to Watch\n3-4 bullet points.\n## Risks & Headwinds\n2-3 bullet points.\n## Bottom Line\n1-2 sentences.\n\nReference people, numbers, dates. Max 250 words.';
+    var sysPrm = 'You are the Strategy Orchestrator in a Solace Agent Mesh. You help salespeople prepare for conversations with their accounts. Synthesize agent findings into actionable sales angles. Use markdown ## headers and bullet points.';
+    var usrPrm = 'Based on these agent findings about ' + company + ', write a SALES BRIEF that helps a salesperson prepare for a conversation with ' + company + '.\n\nAGENT FINDINGS:' + findings + '\n\n'
+      + (sellerContext ? 'THE SALESPERSON SELLS: ' + sellerContext + '\n\n' : '')
+      + 'Write the brief with these sections:\n'
+      + '## The Big Picture\n2-3 sentences on ' + company + '\'s current state and what matters most right now.\n'
+      + '## Conversation Openers\n3-4 bullet points: specific recent events, news, or signals the salesperson can reference to start a relevant conversation. Each should be a natural talking point.\n'
+      + '## Buying Signals\n2-3 bullet points: reasons ' + company + ' might need the seller\'s product right now.\n'
+      + '## Watch Out For\n2-3 bullet points: objections, risks, or bad timing to prepare for.\n'
+      + '## Recommended Next Step\n1-2 sentences: who to contact and what to say.\n'
+      + '\nBe specific. Name people, cite numbers, reference dates. Max 300 words.';
 
     callPerplexity(sysPrm, usrPrm)
       .then(function (s) { agentResults['strategy'] = s; })
@@ -249,7 +259,7 @@
         '<div class="result-card">'
         + '<div class="result-card__header">'
         +   '<div class="result-card__icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg></div>'
-        +   '<div class="result-card__agent">Account Brief — ' + esc(company) + '</div>'
+        +   '<div class="result-card__agent">Account Brief: ' + esc(company) + '</div>'
         + '</div>'
         + '<div class="result-card__body">' + md(strategy) + '</div>'
         + '</div>';

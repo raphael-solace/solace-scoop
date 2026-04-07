@@ -1,10 +1,10 @@
 # Solace Scoop
 
-**Agent Mesh Account Intelligence — powered by Solace Agent Mesh.**
+**Agent Mesh Account Intelligence - powered by Solace Agent Mesh.**
 
 A live demo of event-driven AI agents working in parallel to research any company. Five specialized agents (People Intel, Corporate Intel, Market & Competitive, Risk & Compliance, Hiring & Growth) each publish their findings via Solace PubSub+, then a Strategy Orchestrator synthesizes everything into a unified intelligence brief.
 
-**[Try it live](https://raphael-solace.github.io/solace-scoop/)** — free, no signup.
+**[Try it live](https://raphael-solace.github.io/solace-scoop/)** - free, no signup.
 
 ---
 

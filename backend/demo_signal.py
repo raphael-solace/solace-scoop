@@ -1,6 +1,6 @@
 """
 Generate a Scoop demo signal for a specific company.
-Used for LinkedIn outreach — run this to get a compelling signal
+Used for LinkedIn outreach - run this to get a compelling signal
 you can paste into a DM.
 
 Usage:

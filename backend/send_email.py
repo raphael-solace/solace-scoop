@@ -1,5 +1,5 @@
 """
-Scoop — Email delivery via Gmail SMTP
+Scoop - Email delivery via Gmail SMTP
 
 Uses a Gmail account with an App Password to send digests.
 No external dependencies beyond the standard library.

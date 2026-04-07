@@ -1,4 +1,4 @@
--- Scoop — Supabase Schema
+-- Scoop - Supabase Schema
 -- Run this in the Supabase SQL editor to set up the database.
 
 -- Users table

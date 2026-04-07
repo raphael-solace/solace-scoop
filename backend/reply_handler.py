@@ -1,5 +1,5 @@
 """
-Scoop — Reply Handler
+Scoop - Reply Handler
 
 Polls the Gmail inbox for replies to digest emails. When a user
 replies with a question ("Tell me more about the Renault CTO move"),
@@ -162,7 +162,7 @@ Context from the original digest:
 Answer their question with specific, actionable intelligence.
 Include names, titles, dates, and sources where possible.
 Keep the response concise (3-5 paragraphs max).
-Write in a warm but professional tone. Sign off as "— Scoop 🐶🗞️".""",
+Write in a warm but professional tone. Sign off as "- Scoop 🐶🗞️".""",
                     },
                     {"role": "user", "content": question},
                 ],

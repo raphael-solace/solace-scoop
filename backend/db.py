@@ -1,5 +1,5 @@
 """
-Scoop — Database layer (Supabase)
+Scoop - Database layer (Supabase)
 
 Simple async wrapper around the Supabase REST API.
 Uses httpx directly to keep dependencies minimal.

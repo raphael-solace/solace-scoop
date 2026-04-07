@@ -2,9 +2,9 @@
 Scoop API Server
 
 Endpoints:
-  POST /api/subscribe  — Sign up a new user (from landing page)
-  POST /api/digest     — Run weekly digest (called by cron)
-  GET  /health         — Health check
+  POST /api/subscribe  - Sign up a new user (from landing page)
+  POST /api/digest     - Run weekly digest (called by cron)
+  GET  /health         - Health check
 """
 
 from __future__ import annotations
