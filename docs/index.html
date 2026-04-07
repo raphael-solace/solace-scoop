@@ -25,7 +25,7 @@
       </a>
       <div class="nav__links">
         <a href="#how-it-works">How it works</a>
-        <a href="#demo" class="btn btn--sm">Try it</a>
+        <a href="#setup" class="btn btn--sm">Get started</a>
       </div>
     </div>
   </nav>
@@ -41,10 +41,10 @@
         A mesh of AI agents delivers a live brief on any company — people moves, financials, competitive signals, risks, and growth trends. All in seconds.
       </p>
       <form id="hero-form" class="hero__form" novalidate>
-        <input class="hero__input" type="text" id="hero-company" placeholder="Enter a company name..." autocomplete="off">
-        <button type="submit" class="btn btn--lg" id="hero-btn" disabled>Get the scoop</button>
+        <input class="hero__input" type="email" id="hero-email" placeholder="you@company.com" required autocomplete="email">
+        <button type="submit" class="btn btn--lg">Get started</button>
       </form>
-      <p class="hero__note">Free. No signup. Powered by Perplexity + Solace Agent Mesh.</p>
+      <p class="hero__note">Free. No credit card. No install.</p>
     </div>
   </header>
 
@@ -83,55 +83,43 @@
     </div>
   </section>
 
-  <!-- Demo -->
-  <section class="demo" id="demo">
+  <!-- Setup Form -->
+  <section class="setup" id="setup">
     <div class="container">
-      <h2 class="section__title">Try it now</h2>
-      <p class="section__subtitle">Type any company and watch the agent mesh go to work.</p>
+      <h2 class="section__title">Tell us about your accounts</h2>
+      <p class="section__subtitle">We'll tailor every brief to what you sell and who you're targeting.</p>
 
-      <form id="demo-form" class="demo__form" novalidate>
-        <div class="demo__input-row">
-          <input class="demo__input" type="text" id="demo-company" placeholder="e.g. Snowflake, Databricks, Stripe..." autocomplete="off">
-          <button type="submit" class="btn btn--lg" id="demo-btn" disabled>
-            <span class="btn__text">Get the scoop</span>
-            <span class="btn__loader" hidden>
-              <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
-              Agents working...
-            </span>
-          </button>
-        </div>
-      </form>
-
-      <!-- Agent Mesh (hidden until running) -->
-      <div id="mesh-section" class="mesh" hidden>
-        <div class="mesh__header">
-          <h3 class="mesh__title">Agent mesh updating on <span id="mesh-company" class="mesh__company"></span></h3>
-          <p class="mesh__subtitle">5 agents working in parallel via Solace Event Mesh</p>
-        </div>
-        <div class="mesh__grid" id="mesh-grid"></div>
-        <div class="mesh__orchestrator">
-          <div class="agent-card agent-card--orchestrator">
-            <div class="agent-card__icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4m-2.83-7.17l-2.83 2.83m-8.48 8.48l-2.83 2.83m0-14.14l2.83 2.83m8.48 8.48l2.83 2.83"/></svg>
-            </div>
-            <div class="agent-card__info">
-              <h3 class="agent-card__name">Strategy Orchestrator</h3>
-              <div class="agent-card__status" id="orchestrator-status">Waiting for agents...</div>
-            </div>
-            <div class="agent-card__spinner" id="orchestrator-spinner"></div>
+      <form id="setup-form" class="setup-form" novalidate>
+        <div class="setup-form__fields">
+          <div class="setup-form__field">
+            <label class="setup-form__label" for="seller-desc">What do you sell?</label>
+            <input class="setup-form__input" type="text" id="seller-desc" placeholder="e.g. Event-driven messaging middleware for enterprise integration" required>
+          </div>
+          <div class="setup-form__field">
+            <label class="setup-form__label" for="seller-url">Your company website <span class="setup-form__hint">(optional)</span></label>
+            <input class="setup-form__input" type="url" id="seller-url" placeholder="e.g. https://solace.com">
+          </div>
+          <div class="setup-form__field setup-form__field--full">
+            <label class="setup-form__label" for="companies">Companies to track <span class="setup-form__hint">one per line, up to 10</span></label>
+            <textarea class="setup-form__textarea" id="companies" rows="6" placeholder="Snowflake&#10;Databricks&#10;Stripe&#10;Confluent&#10;HubSpot&#10;Datadog" required></textarea>
           </div>
         </div>
-      </div>
+        <button type="submit" class="btn btn--lg btn--full" id="btn-submit">
+          <span class="btn__text">Get the scoop</span>
+          <span class="btn__loader" hidden>
+            <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
+            Agents working...
+          </span>
+        </button>
+      </form>
+    </div>
+  </section>
 
-      <!-- Results (hidden until ready) -->
-      <div id="results-section" class="results" hidden>
-        <div class="results__header">
-          <h3 class="results__title">The scoop on <span id="results-company"></span></h3>
-          <p class="results__subtitle">Compiled by 5 agents via Solace Agent Mesh</p>
-        </div>
-        <div class="results__grid" id="results-grid"></div>
-        <div class="results__strategy" id="results-strategy"></div>
-      </div>
+  <!-- Results (rendered by JS below the form) -->
+  <section id="results-section" class="results-section" hidden>
+    <div class="container">
+      <!-- Per-company results injected here -->
+      <div id="results-container"></div>
     </div>
   </section>
 
