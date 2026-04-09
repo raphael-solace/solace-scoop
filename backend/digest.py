@@ -1,12 +1,16 @@
 """
 Scoop Digest Pipeline
 
-Three-pass approach:
+Four-pass approach:
   1. Deep research on the seller (product, buyers, triggers, deal killers, urgency drivers).
-  2. For each target account, run 8 parallel queries: people moves, business initiatives,
-     hiring velocity, partnerships, financial events, risk signals, competitive moves,
-     regulatory/compliance.
-  3. Rank by urgency and impact, deduplicate, return top signals.
+  2. Website intel: understand what each target company actually does, their industry, and tech stack.
+  3. For each target account, run 8 parallel queries tuned to mid-level sellers:
+     website/tech intel, people (technical leaders, not C-suite), IT initiatives,
+     hiring velocity, partnerships, financial events, risk signals, competitive moves.
+  4. Rank by urgency and impact, deduplicate, return top signals.
+
+Designed for mid-level B2B salespeople who talk to Directors, VPs, and technical leaders
+-- not the CEO or board. Signals focus on technology, architecture, and IT operations.
 
 At $3/1000 Perplexity queries, thoroughness is cheap. Bad intel is expensive.
 """
@@ -24,12 +28,17 @@ PPLX_API_URL = "https://api.perplexity.ai/chat/completions"
 PPLX_MODEL = "sonar-pro"
 
 SIGNAL_CATEGORIES = {
-    # People
+    # People (mid-level focus)
     "leadership_change": {"tag": "People Move", "color": "red"},
-    # Initiatives
+    "technical_leader": {"tag": "Tech Leader", "color": "red"},
+    # Technology & Architecture
     "tech_initiative": {"tag": "Tech Initiative", "color": "blue"},
     "platform_change": {"tag": "Platform Change", "color": "blue"},
+    "tech_stack": {"tag": "Tech Stack", "color": "blue"},
+    "architecture": {"tag": "Architecture", "color": "blue"},
+    "cloud_migration": {"tag": "Cloud Migration", "color": "blue"},
     "digital_transformation": {"tag": "Transformation", "color": "blue"},
+    "integration": {"tag": "Integration", "color": "blue"},
     "strategic": {"tag": "Strategic", "color": "blue"},
     # Growth
     "hiring": {"tag": "Hiring Signal", "color": "green"},
@@ -100,19 +109,20 @@ async def research_seller(product: str) -> dict:
         system="You are a B2B sales intelligence analyst. Return only valid JSON.",
         prompt=f"""Research "{product}" thoroughly as a B2B product/company.
 I need to understand this deeply for sales intelligence purposes.
+IMPORTANT: The salesperson using this tool is a mid-level rep who talks to Directors, VPs, and technical leaders -- NOT the CEO or board. Focus the buyer personas on technical decision-makers.
 
 Respond in this exact JSON format (no markdown, no code fences):
 {{
     "company_summary": "<2-3 sentences on what this company/product does>",
     "industry": "<the seller's primary industry>",
-    "buyer_personas": "<comma-separated list of 5-8 job titles who evaluate and buy this product>",
-    "use_cases": "<the top 5 problems this product solves, comma-separated>",
-    "buying_triggers": "<7-10 specific events that would create a sales opportunity, comma-separated>",
-    "deal_killers": "<5-7 events or situations that would KILL a deal or indicate the prospect is NOT a buyer. e.g., 'just signed a 3-year contract with competitor X', 'hiring freeze in department', 'recently failed implementation of similar tool'>",
-    "urgency_drivers": "<What creates URGENCY to buy NOW vs. next quarter? Compliance deadlines, fiscal year timing, competitive pressure, board mandates, etc.>",
+    "buyer_personas": "<comma-separated list of 5-8 MID-LEVEL job titles who evaluate and buy this product. Focus on Directors, VPs, Heads of departments, Enterprise Architects, Solution Architects, Engineering Managers, Platform Leads -- NOT CEO, CTO, CFO>",
+    "use_cases": "<the top 5 technical problems this product solves, comma-separated>",
+    "buying_triggers": "<7-10 specific technical/operational events that would create a sales opportunity, e.g. 'cloud migration project started', 'legacy middleware end-of-life', 'real-time data initiative launched', comma-separated>",
+    "deal_killers": "<5-7 events or situations that would KILL a deal or indicate the prospect is NOT a buyer. e.g., 'just signed a 3-year contract with competitor X', 'hiring freeze in IT department', 'recently failed implementation of similar tool'>",
+    "urgency_drivers": "<What creates URGENCY to buy NOW vs. next quarter? Compliance deadlines, technology end-of-life, migration timelines, competitive pressure, project deadlines, etc.>",
     "competitors": "<top 3-5 competitors, comma-separated>",
-    "keywords": "<10 keywords and phrases a prospect would use when they need this product, comma-separated>",
-    "product_category": "<one short phrase describing the category, e.g. 'cloud ERP', 'observability platform', 'commercial insurance'>",
+    "keywords": "<10 technical keywords and phrases a prospect would use when they need this product, comma-separated. Include technology terms, architecture patterns, and integration concepts.>",
+    "product_category": "<one short phrase describing the category, e.g. 'event-driven messaging', 'observability platform', 'API management'>",
     "industries_served": "<top 5 industries where this product is most commonly sold, comma-separated>"
 }}""",
         max_tokens=700,
@@ -125,37 +135,70 @@ Respond in this exact JSON format (no markdown, no code fences):
 
 QUERY_TYPES = [
     {
+        "name": "website_intel",
+        "prompt": """Research {company} website and online presence to understand what this company actually does.
+Look for:
+- What products or services does {company} offer?
+- What industry are they in? (IT, finance, healthcare, manufacturing, retail, logistics, etc.)
+- What technology stack, platforms, or technical architecture do they use or sell?
+- What are their main use cases and who are THEIR customers?
+- What technical challenges are they likely working on? (cloud migration, API modernization, real-time data, microservices, event-driven architecture, etc.)
+- Company size, headquarters, and key markets
+- Blog posts, case studies, or technical documentation that reveal their technology direction
+
+This context is critical -- we need to understand {company}'s business so other queries can find RELEVANT signals for selling {product_category} to them.
+If nothing found, say so clearly.""",
+    },
+    {
         "name": "people_moves",
         "prompt": """Find recent role changes, appointments, departures, or promotions
-at {company} in the last 30 days. Focus on people in roles relevant to buying {product_category}:
+at {company} in the last 30 days. Focus on MID-LEVEL TECHNICAL LEADERS, not the CEO or board:
+- Directors, VPs, and Heads of IT, Engineering, Architecture, Integration, Data, or Platform teams
+- Enterprise Architects, Solution Architects, Integration Leads
+- Engineering Managers, Platform Engineering Leads, DevOps/SRE leaders
 - Roles like: {buyer_personas}
-- Any leadership change at the VP, Director, or Head-of level in departments that would buy {product_category}
-- New hires into senior roles in relevant departments
 
 Include the person's NAME, their new TITLE, and where they came from if known.
-Skip roles that have no connection to buying {product_category}.
+Skip C-suite roles unless they directly manage the department that buys {product_category}.
+A new VP of Engineering or Director of Platform is more relevant than a new CEO.
 If no relevant people moves found, say so clearly.""",
     },
     {
-        "name": "business_initiatives",
-        "prompt": """Find recent initiatives, programs, or strategic projects at {company}
-in the last 30 days that would be relevant to someone selling {product_category}.
-
+        "name": "tech_stack_signals",
+        "prompt": """Research the TECHNOLOGY STACK and ARCHITECTURE decisions at {company}.
 Look for:
+- What platforms, middleware, cloud providers, or integration tools does {company} use?
+- Job postings mentioning specific technologies (Kafka, MQ, API gateways, microservices, event-driven, Kubernetes, etc.)
+- Blog posts, conference talks, or case studies by {company} employees about their tech stack
+- Open-source contributions or GitHub repositories from {company}
+- Technology partnerships or certified integrations
+- Architecture decisions or migration projects mentioned publicly
+- Keywords in job descriptions that match: {keywords}
+
+The insight we need: What is {company}'s current technology landscape, and where does {product_category} fit or compete?
+If nothing found, say so clearly.""",
+    },
+    {
+        "name": "it_initiatives",
+        "prompt": """Find recent IT and technology initiatives at {company} in the last 30 days.
+Look for:
+- Digital transformation programs, cloud migration projects, modernization efforts
+- New platform builds, architecture overhauls, API strategy initiatives
+- Integration projects, data pipeline work, real-time processing initiatives
 - Programs related to: {use_cases}
-- Budget increases or new investment announcements in relevant areas
-- RFPs, tenders, or vendor selection processes
-- Transformation programs, modernization efforts, or expansion plans
+- Budget increases for IT, engineering, or platform teams
+- RFPs, vendor evaluations, or procurement processes for technology
 - Anything matching these buying triggers: {buying_triggers}
 
-Include specific details: project scope, budget if mentioned, timeline.
+Include specific details: project scope, technologies mentioned, timeline.
+Focus on operational and technical initiatives that a Director of IT or VP of Engineering would own.
 If nothing found, say so clearly.""",
     },
     {
         "name": "hiring_velocity",
         "prompt": """Analyze the HIRING PATTERNS at {company}. Not just individual job postings, but the VOLUME and VELOCITY of hiring.
 Look for:
-- Total number of open roles relevant to buying {product_category}
+- Total number of open roles in IT, engineering, architecture, integration, data, platform, DevOps
 - CLUSTERS of similar roles (e.g., "12 data engineers posted in 2 weeks" = building something big)
 - New team formation signals (e.g., first-ever "Head of Platform Engineering" = new department)
 - Seniority patterns (hiring a VP before ICs = early stage; hiring 20 ICs = scaling)
@@ -170,47 +213,32 @@ If nothing found beyond normal hiring activity, say so clearly.""",
     },
     {
         "name": "partnerships_vendors",
-        "prompt": """Find recent partnerships, vendor selections, or strategic relationships
+        "prompt": """Find recent technology partnerships, vendor selections, or platform decisions
 at {company} in the last 30 days relevant to someone selling {product_category}. Look for:
-- New vendor announcements in areas where {product_category} competes
-- Strategic partnerships that change how {company} operates
+- New technology vendor announcements (cloud, middleware, integration, data platforms)
+- Strategic technology partnerships that change {company}'s architecture
 - Competitor deployments (competitors include: {competitors})
-- Industry events or conferences where {company} presented as a buyer
+- Conference presentations or case studies where {company} discussed their technology choices
+- Integration partner announcements or marketplace listings
 
-Include specific names and details.
+Include specific vendor names, technologies, and details.
 If nothing relevant found, say so clearly.""",
-    },
-    {
-        "name": "financial_events",
-        "prompt": """Find recent financial events and earnings information for {company} in the last 60 days.
-Look for:
-- Funding rounds (any stage: seed, Series A-F, PE, debt)
-- Revenue growth or decline announcements
-- Earnings call highlights. QUOTE specific language from executives about spending priorities, growth plans, or cost cuts
-- Budget allocation announcements ("investing in X", "doubling down on Y")
-- IPO filings or secondary offerings
-- Analyst upgrades/downgrades with reasoning
-
-CRITICAL: If you find earnings call language, QUOTE THE EXACT WORDS.
-A CEO saying "we are investing heavily in sales enablement" is 100x more
-valuable than "company had good earnings."
-If nothing found, say so clearly.""",
     },
     {
         "name": "risk_signals",
         "prompt": """Find recent NEGATIVE or WARNING signals at {company} in the last 60 days.
 This is about protecting existing deals and spotting churn risk.
 Look for:
-- Layoffs, hiring freezes, or headcount reductions
-- Restructuring, department mergers, or org chart changes
-- Key executive departures (especially in the department that buys {product_category})
-- Budget cuts or "cost optimization" language in public statements
-- Office closures or lease reductions
-- Declining stock price with analyst commentary on WHY
-- Customer complaints about THEIR product (a company in trouble buys less)
+- Layoffs, hiring freezes, or headcount reductions -- especially in IT/engineering
+- Restructuring, department mergers, or org chart changes in technical teams
+- Key technical leader departures (Directors, VPs of Engineering, Architects)
+- Budget cuts or "cost optimization" language targeting IT spend
+- Office closures or team consolidation
+- Failed technology projects, outages, or public technical issues
+- Customer complaints about {company}'s own product reliability
 
-Be specific about the SCOPE of the negative signal. "Laid off 50 in marketing"
-is very different from "laid off 500 company-wide."
+Be specific about the SCOPE of the negative signal. "Laid off 50 in engineering"
+is very different from "laid off 50 in marketing."
 
 If nothing concerning found, explicitly state "No risk signals detected" --
 that itself is useful information for a sales rep.""",
@@ -221,31 +249,15 @@ that itself is useful information for a sales rep.""",
 Look for:
 - Has {company} recently adopted, evaluated, or mentioned any of these competitors: {competitors}?
 - Job postings at {company} that mention competitor product names or related technologies
-- Conference talks or blog posts by {company} employees about tools/platforms they use
+- Conference talks or blog posts by {company} employees about tools/platforms they use in the {product_category} space
 - Case studies or testimonials where {company} is featured as a customer of a competitor
-- RFP or vendor selection processes {company} is running
-- Any public statements about switching, replacing, or consolidating vendors in the {product_category} space
+- Architecture decisions that favor or disfavor {product_category}
+- Any public statements about switching, replacing, or consolidating vendors
 
 IMPORTANT: Also look for signals that {company} is UNHAPPY with their current
 solution. Migration projects, "replacing legacy systems", hiring for skills
-associated with switching platforms -- all gold.
+associated with switching platforms -- all gold for a mid-level sales rep.
 If nothing found, say so clearly.""",
-    },
-    {
-        "name": "regulatory_compliance",
-        "prompt": """Find recent regulatory, compliance, or industry mandate changes that would affect {company} and create urgency to buy {product_category}.
-Look for:
-- New regulations in {company}'s industry
-- Compliance deadlines approaching in the next 6 months
-- Fines, penalties, or enforcement actions against {company} or their PEERS in the same industry
-- Industry standards updates (ISO, SOC2, GDPR, AI Act, etc.)
-- Government contract requirements that mandate specific capabilities
-- ESG/sustainability reporting requirements affecting their operations
-- Insurance or audit requirements driving changes
-
-For each regulation found, note the DEADLINE (when must they comply?)
-and the PENALTY for non-compliance.
-If nothing relevant found, say so clearly.""",
     },
 ]
 
@@ -261,12 +273,12 @@ Return this exact format (no markdown, no code fences):
     "company": "{company}",
     "tag": "<one of: {all_tags}>",
     "headline": "<one specific sentence with names, dates, and concrete details>",
-    "why": "<one sentence connecting this to selling {product}, referencing which buyer persona would care and why this changes the deal dynamic>",
+    "why": "<one sentence connecting this to selling {product}, referencing which mid-level technical leader (Director, VP, Architect) would care and why this changes the deal dynamic>",
     "urgency": "<one of: IMMEDIATE, THIS_WEEK, THIS_MONTH, THIS_QUARTER>",
     "window": "<Why this timing matters. e.g., 'New CTO has 90 days to audit the stack.' or 'Compliance deadline is June 30.'>",
     "opening_line": "<A natural, non-salesy sentence the rep can use to start a conversation referencing this signal. e.g., 'I saw [name] just joined as CTO. Congrats on the hire.'>",
     "risk_or_opportunity": "<one of: opportunity, risk, both>",
-    "suggested_action": "<Specific next step. Include: who to contact (title), what channel (email/LinkedIn/phone), and what to say.>",
+    "suggested_action": "<Specific next step. Include: who to contact (mid-level title like Director/VP/Architect, NOT CEO/CTO), what channel (email/LinkedIn/phone), and what to say.>",
     "confidence": "<HIGH if based on named sources and dates, MEDIUM if inferred from patterns, LOW if speculative>"
   }}
 ]
@@ -307,12 +319,14 @@ async def _run_company_query(
     )
 
     data = await _pplx_query(
-        system=f"""You are a B2B sales intelligence analyst.
+        system=f"""You are a B2B sales intelligence analyst helping a mid-level salesperson.
 The salesperson sells: {product} ({ctx['product_category']})
 Their product solves: {ctx['use_cases']}
-Their buyers are: {ctx['buyer_personas']}
+Their buyers are mid-level technical leaders: {ctx['buyer_personas']}
+NOTE: The salesperson does NOT talk to the CEO/CTO/Board. They sell to Directors, VPs, Architects, and Engineering Managers.
 
 Extract concrete, specific facts. Include names, titles, dates, and numbers.
+Focus on technology, architecture, IT operations, and integration signals.
 Do not speculate or invent information. If you can't find anything, say so.
 Return only valid JSON.""",
 

@@ -13,25 +13,104 @@
   var SUPABASE_URL = 'https://REDACTED_SUPABASE_URL';
   var SUPABASE_KEY = 'REDACTED_SUPABASE_KEY';
 
+  // ── Helpers ─────────────────────────────
+  // Extract a clean company name and domain from user input (URL or name)
+  function parseCompanyInput(input) {
+    input = input.trim();
+    var domain = '';
+    var name = input;
+    // If it looks like a URL or domain
+    var urlMatch = input.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z]{2,})+)/i);
+    if (urlMatch) {
+      domain = urlMatch[1];
+      // Derive company name from domain (e.g. "solace.com" -> "Solace")
+      name = domain.split('.')[0];
+      name = name.charAt(0).toUpperCase() + name.slice(1);
+    }
+    return { name: name, domain: domain, raw: input };
+  }
+
   // ── Agents ──────────────────────────────
   var AGENTS = [
+    { id: 'website', name: 'Website Intel',
+      prompt: function (co, s, domain) {
+        var target = domain ? 'the website ' + domain + ' (company: ' + co + ')' : co;
+        return 'Research ' + target + ' thoroughly.\n'
+          + '## What to find:\n'
+          + '- What does this company DO? What products/services do they offer?\n'
+          + '- What INDUSTRY are they in? (IT, finance, healthcare, manufacturing, retail, etc.)\n'
+          + '- What TECHNOLOGY STACK or platforms do they use or sell?\n'
+          + '- What are their main USE CASES and who are THEIR customers?\n'
+          + '- What technical challenges or initiatives are they likely working on? (cloud migration, API modernization, real-time data, microservices, etc.)\n'
+          + '- Company size, headquarters, and key markets\n'
+          + (domain ? '\nLook at ' + domain + ' directly for product pages, blog posts, case studies, and technical documentation to understand their technology focus.\n' : '')
+          + (s ? '\nThe seller sells: ' + s + '. Based on what you learn about ' + co + ', identify which parts of their business would benefit from this product and why.\n' : '')
+          + '\nMarkdown with ## headers and bullets. Be specific. Max 250 words.';
+      }
+    },
     { id: 'people', name: 'People Intel',
-      prompt: function (co, s) { return 'Research ' + co + ': KEY PEOPLE.\n- Current C-suite (name, tenure, background)\n- Recent executive changes (last 6 months): departures, new hires, promotions\n- Who makes enterprise/technology purchasing decisions?\n' + (s ? '\nThe seller context is: ' + s + '. Identify which people at ' + co + ' would be the right contacts for this product.\n' : '') + '\nMarkdown with ## headers and bullets. Be specific with names, titles, and dates. Max 200 words.'; }
+      prompt: function (co, s) {
+        return 'Research ' + co + ': KEY CONTACTS for a mid-level sales engagement.\n'
+          + 'I am NOT selling to the CEO or board. I need the people who actually evaluate and buy technology:\n'
+          + '- Directors, VPs, and Heads of IT, Engineering, Architecture, Integration, Data, or Platform teams\n'
+          + '- Technical decision-makers: Enterprise Architects, Solution Architects, Integration Leads\n'
+          + '- Recent hires or role changes in these mid-level leadership positions (last 6 months)\n'
+          + '- Who owns the budget for technology/infrastructure purchases at ' + co + '?\n'
+          + '- LinkedIn profiles or professional background if available\n'
+          + (s ? '\nThe seller sells: ' + s + '. Identify the specific people at ' + co + ' who would evaluate and champion this kind of product. Focus on technical leaders, not executives.\n' : '')
+          + '\nMarkdown with ## headers and bullets. Be specific with names, titles, and dates. Max 200 words.';
+      }
     },
-    { id: 'corporate', name: 'Corporate Signals',
-      prompt: function (co, s) { return 'Research ' + co + ': CORPORATE & FINANCIAL signals.\n- Revenue, valuation, recent funding\n- Earnings, M&A activity, strategic deals\n- Expansion or contraction signals (hiring surges, layoffs, new offices)\n' + (s ? '\nThe seller context is: ' + s + '. Highlight any financial signals that would create an opening to sell this product to ' + co + '.\n' : '') + '\nMarkdown with ## headers and bullets. Be specific with numbers and dates. Max 200 words.'; }
+    { id: 'techstack', name: 'Tech & Architecture',
+      prompt: function (co, s) {
+        return 'Research ' + co + ': TECHNOLOGY & ARCHITECTURE signals.\n'
+          + '- What technology platforms, middleware, cloud providers, or integration tools does ' + co + ' use?\n'
+          + '- Any recent blog posts, conference talks, or job postings that reveal their tech stack?\n'
+          + '- Are they going through a cloud migration, modernization, or digital transformation?\n'
+          + '- What integration challenges do they likely face given their industry and size?\n'
+          + '- Any public architecture decisions, open-source contributions, or tech blog posts?\n'
+          + '- Job postings that mention specific technologies (Kafka, MQ, API gateways, microservices, event-driven, etc.)\n'
+          + (s ? '\nThe seller sells: ' + s + '. Identify technology signals at ' + co + ' that suggest they need this product or are evaluating alternatives. Look for gaps in their stack.\n' : '')
+          + '\nMarkdown with ## headers and bullets. Max 200 words.';
+      }
     },
-    { id: 'market', name: 'Market & Competitive',
-      prompt: function (co, s) { return 'Research ' + co + ': MARKET & COMPETITIVE position.\n- Primary competitors and how ' + co + ' differentiates\n- Recent product launches or major announcements\n- Industry trends affecting their business\n' + (s ? '\nThe seller context is: ' + s + '. Identify competitive dynamics that would make ' + co + ' a good prospect for this product.\n' : '') + '\nMarkdown with ## headers and bullets. Max 200 words.'; }
+    { id: 'initiatives', name: 'IT Initiatives',
+      prompt: function (co, s) {
+        return 'Research ' + co + ': CURRENT IT & BUSINESS INITIATIVES.\n'
+          + '- Digital transformation programs, cloud migration projects, modernization efforts\n'
+          + '- New product launches or platform changes that require integration work\n'
+          + '- Partnerships, vendor selections, or RFPs related to IT infrastructure\n'
+          + '- Conference presentations, webinars, or case studies by ' + co + ' employees about ongoing projects\n'
+          + '- Budget announcements or investment areas ("investing in real-time", "modernizing our architecture", etc.)\n'
+          + '- Any press releases about technology partnerships or platform changes\n'
+          + (s ? '\nThe seller sells: ' + s + '. Focus on initiatives at ' + co + ' where this product would be relevant. What projects are they working on that need this?\n' : '')
+          + '\nMarkdown with ## headers and bullets. Be specific with project names, timelines, and scope. Max 200 words.';
+      }
     },
-    { id: 'risk', name: 'Risk & Compliance',
-      prompt: function (co, s) { return 'Research ' + co + ': RISK & COMPLIANCE.\n- Lawsuits, regulatory actions, compliance issues\n- Data breaches, security incidents\n- Reputational risks, financial risk signals\n' + (s ? '\nThe seller context is: ' + s + '. Note any risks that could either block a deal or create urgency to buy.\n' : '') + '\nMarkdown with ## headers and bullets. If no major risks, say so. Max 200 words.'; }
+    { id: 'hiring', name: 'Hiring Signals',
+      prompt: function (co, s) {
+        return 'Research ' + co + ': HIRING PATTERNS that signal technology investments.\n'
+          + '- Volume of open roles in IT, engineering, architecture, integration, data, platform, DevOps\n'
+          + '- Clusters of similar roles (e.g., "8 data engineers in 2 weeks" = building something)\n'
+          + '- New team formation (first-ever "Head of Platform" = new initiative)\n'
+          + '- Job descriptions mentioning specific technologies, tools, or migration keywords\n'
+          + '- Contractor/consultant postings (often precede major projects)\n'
+          + '- Hiring freezes or sudden posting removals (risk signal)\n'
+          + (s ? '\nThe seller sells: ' + s + '. Focus on hiring patterns at ' + co + ' that suggest they are investing in areas where this product fits. Keywords in job descriptions are gold.\n' : '')
+          + '\nMarkdown with ## headers and bullets. Patterns matter more than individual postings. Max 200 words.';
+      }
     },
-    { id: 'hiring', name: 'Hiring & Growth',
-      prompt: function (co, s) { return 'Research ' + co + ': HIRING & GROWTH signals.\n- Hiring velocity (growing, shrinking, flat?)\n- Key departments hiring heavily\n- Geographic expansion, new offices\n- Senior roles that signal strategic initiatives\n' + (s ? '\nThe seller context is: ' + s + '. Highlight hiring patterns that suggest ' + co + ' is investing in areas where this product would help.\n' : '') + '\nMarkdown with ## headers and bullets. Max 200 words.'; }
-    },
-    { id: 'news', name: 'Recent News',
-      prompt: function (co, s) { return 'Research the latest news about ' + co + ' from the past 30 days.\n- Major announcements, press releases, product updates\n- Notable media coverage or analyst commentary\n- Anything a salesperson should reference in a conversation with ' + co + '\n' + (s ? '\nThe seller context is: ' + s + '. Focus on news that creates a natural conversation opener when selling this product to ' + co + '.\n' : '') + '\nMarkdown with ## headers and bullets. Be specific with dates and sources. Max 200 words.'; }
+    { id: 'news', name: 'Industry News',
+      prompt: function (co, s) {
+        return 'Research the latest news about ' + co + ' from the past 30 days, with a focus on IT, technology, and industry developments.\n'
+          + '- Technology announcements, platform updates, product launches\n'
+          + '- Industry news that affects ' + co + ' (regulations, market shifts, competitor moves)\n'
+          + '- Conference appearances, keynotes, or thought leadership by ' + co + ' employees\n'
+          + '- Partnerships, integrations, or ecosystem announcements\n'
+          + '- Anything a mid-level salesperson could reference in a conversation with a Director or VP of IT/Engineering at ' + co + '\n'
+          + (s ? '\nThe seller sells: ' + s + '. Focus on news that creates a natural, relevant conversation opener when talking to a technical leader at ' + co + '. Skip generic corporate announcements unless they reveal technology direction.\n' : '')
+          + '\nMarkdown with ## headers and bullets. Be specific with dates and sources. Max 200 words.';
+      }
     }
   ];
 
@@ -84,11 +163,11 @@
     if (!sellerDesc) { showError('seller-desc', 'Tell us what you sell so agents can tailor the brief.'); return; }
     if (!companiesRaw) { showError('companies', 'Add at least one company.'); return; }
 
-    var companies = companiesRaw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 10);
-    if (!companies.length) { showError('companies', 'Add at least one company.'); return; }
+    var companiesParsed = companiesRaw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 10).map(parseCompanyInput);
+    if (!companiesParsed.length) { showError('companies', 'Add at least one company or website.'); return; }
 
     savedSellerDesc = sellerDesc;
-    savedCompanies = companies;
+    savedCompanies = companiesParsed.map(function (c) { return c.raw; });
     var sellerContext = sellerDesc + (sellerUrl ? ' (' + sellerUrl + ')' : '');
 
     // Loading
@@ -103,8 +182,8 @@
     setTimeout(function () { resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
 
     // Launch per company
-    var companiesLeft = companies.length;
-    companies.forEach(function (company, idx) {
+    var companiesLeft = companiesParsed.length;
+    companiesParsed.forEach(function (company, idx) {
       setTimeout(function () {
         runCompanyMesh(company, sellerContext, idx, function () {
           companiesLeft--;
@@ -146,6 +225,10 @@
 
   // ── Run mesh for one company ────────────
   function runCompanyMesh(company, sellerContext, companyIdx, onDone) {
+    var companyName = company.name;
+    var companyDomain = company.domain;
+    var displayName = companyDomain || companyName;
+
     var block = document.createElement('div');
     block.className = 'company-block';
     block.id = 'block-' + companyIdx;
@@ -153,7 +236,7 @@
     block.innerHTML =
       '<div class="company-block__loading" id="loading-' + companyIdx + '">'
       +   '<div class="loading-dots"><span></span><span></span><span></span></div>'
-      +   '<p class="company-block__loading-text" id="loading-text-' + companyIdx + '">Getting the scoop on <strong>' + esc(company) + '</strong>...</p>'
+      +   '<p class="company-block__loading-text" id="loading-text-' + companyIdx + '">Getting the scoop on <strong>' + esc(displayName) + '</strong>...</p>'
       + '</div>'
       + '<div class="results__strategy" id="strategy-' + companyIdx + '" hidden></div>';
 
@@ -162,17 +245,20 @@
     var agentResults = {};
     var completed = 0;
     var loadingText = document.getElementById('loading-text-' + companyIdx);
-    var sysPrm = 'You are a specialized agent in a Solace Agent Mesh, helping salespeople stay informed about their accounts. Be concise, factual, and focus on signals that matter for sales conversations. Use markdown ## headers and bullet points.';
+    var sysPrm = 'You are a specialized agent in a Solace Agent Mesh, helping mid-level B2B salespeople stay informed about their accounts. Focus on signals useful for talking to Directors, VPs, and technical leaders -- not the CEO or board. Be concise, factual, and focus on technology, architecture, and operational signals. Use markdown ## headers and bullet points.';
 
     AGENTS.forEach(function (agent, idx) {
       setTimeout(function () {
-        callPerplexity(sysPrm, agent.prompt(company, sellerContext))
+        var prompt = agent.id === 'website'
+          ? agent.prompt(companyName, sellerContext, companyDomain)
+          : agent.prompt(companyName, sellerContext);
+        callPerplexity(sysPrm, prompt)
           .then(function (r) { agentResults[agent.id] = r; })
           .catch(function () { agentResults[agent.id] = '(Failed)'; })
           .then(function () {
             completed++;
-            loadingText.innerHTML = 'Getting the scoop on <strong>' + esc(company) + '</strong>... ' + completed + '/' + AGENTS.length;
-            if (completed === AGENTS.length) runOrchestrator(company, sellerContext, companyIdx, agentResults, onDone);
+            loadingText.innerHTML = 'Getting the scoop on <strong>' + esc(displayName) + '</strong>... ' + completed + '/' + AGENTS.length;
+            if (completed === AGENTS.length) runOrchestrator(companyName, sellerContext, companyIdx, agentResults, onDone);
           });
       }, idx * 150);
     });
@@ -186,14 +272,15 @@
     var findings = '';
     AGENTS.forEach(function (a) { findings += '\n\n## ' + a.name + '\n' + (agentResults[a.id] || '(no data)'); });
 
-    var sysPrm = 'You are a sales intelligence agent. Produce ultra-concise account updates. Use markdown bullet points only. No headers. No preamble. No closing remarks.';
-    var usrPrm = 'Based on these agent findings about ' + company + ', write EXACTLY 3 bullet points summarizing the most important recent signals a salesperson should know about RIGHT NOW.\n\nAGENT FINDINGS:' + findings + '\n\n'
+    var sysPrm = 'You are a sales intelligence agent helping a mid-level B2B salesperson. Produce ultra-concise account updates focused on what matters for talking to Directors, VPs, and technical leaders. Use markdown bullet points only. No headers. No preamble. No closing remarks.';
+    var usrPrm = 'Based on these agent findings about ' + company + ', write EXACTLY 3 bullet points summarizing the most actionable signals for a salesperson who talks to technical leaders and mid-level decision-makers (NOT the CEO/CTO).\n\nAGENT FINDINGS:' + findings + '\n\n'
       + (sellerContext ? 'THE SALESPERSON SELLS: ' + sellerContext + '\n\n' : '')
       + 'Rules:\n'
       + '- Exactly 3 bullet points, no more, no less\n'
       + '- Each bullet is one sentence, specific (names, dates, numbers)\n'
       + '- No headers, no sections, no preamble, no closing\n'
-      + '- Focus on actionable signals: people moves, deals, hiring, risks\n'
+      + '- Prioritize: technology initiatives, architecture changes, hiring patterns, integration projects, IT modernization signals\n'
+      + '- Frame each signal as something you could bring up in a conversation with a Director of IT, VP of Engineering, or Enterprise Architect\n'
       + '- Max 75 words total';
 
     callPerplexity(sysPrm, usrPrm, 200)
