@@ -365,40 +365,31 @@
   }
 
   function subscribeToSupabase(email, product, companies) {
-    // Check if user already exists
-    return fetch(SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(email) + '&select=id', {
-      headers: supabaseHeaders()
+    // Upsert user via Postgres ON CONFLICT
+    var upsertHeaders = supabaseHeaders();
+    upsertHeaders['Prefer'] = 'return=representation,resolution=merge-duplicates';
+    return fetch(SUPABASE_URL + '/rest/v1/users?on_conflict=email', {
+      method: 'POST',
+      headers: upsertHeaders,
+      body: JSON.stringify({ email: email, product: product })
     })
-    .then(function (r) { return r.json(); })
-    .then(function (existing) {
-      if (existing.length > 0) {
-        // Already subscribed, just resolve
-        return existing[0];
-      }
-      // Create user
-      return fetch(SUPABASE_URL + '/rest/v1/users', {
-        method: 'POST',
-        headers: supabaseHeaders(),
-        body: JSON.stringify({ email: email, product: product })
-      })
-      .then(function (r) {
-        if (!r.ok) throw new Error('Failed to create user: ' + r.status);
-        return r.json();
-      })
-      .then(function (rows) { return rows[0]; });
+    .then(function (r) {
+      if (!r.ok) return r.text().then(function (t) { throw new Error('User upsert failed: ' + t); });
+      return r.json();
     })
-    .then(function (user) {
+    .then(function (rows) {
+      var user = rows[0];
       if (!companies.length) return;
-      var rows = companies.map(function (name) {
+      var companyRows = companies.map(function (name) {
         return { user_id: user.id, name: name };
       });
       return fetch(SUPABASE_URL + '/rest/v1/companies', {
         method: 'POST',
         headers: supabaseHeaders(),
-        body: JSON.stringify(rows)
+        body: JSON.stringify(companyRows)
       })
       .then(function (r) {
-        if (!r.ok) throw new Error('Failed to save companies: ' + r.status);
+        if (!r.ok) return r.text().then(function (t) { throw new Error('Companies insert failed: ' + t); });
       });
     });
   }
