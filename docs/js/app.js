@@ -10,6 +10,9 @@
   var PPLX_MODEL = 'sonar';
   var PPLX_URL = 'https://api.perplexity.ai/chat/completions';
 
+  var SUPABASE_URL = 'https://REDACTED_SUPABASE_URL';
+  var SUPABASE_KEY = 'REDACTED_SUPABASE_KEY';
+
   // ── Agents ──────────────────────────────
   var AGENTS = [
     { id: 'people', name: 'People Intel',
@@ -132,9 +135,25 @@
 
   // ── Subscribe buttons ───────────────────
   btnSubscribe.addEventListener('click', function () {
-    btnSubscribe.hidden = true;
-    btnNoThanks.hidden = true;
-    subscribeConfirmed.hidden = false;
+    btnSubscribe.disabled = true;
+    btnSubscribe.textContent = 'Subscribing...';
+
+    var sellerDesc = document.getElementById('seller-desc').value.trim();
+    var companiesRaw = document.getElementById('companies').value.trim();
+    var companies = companiesRaw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 10);
+
+    subscribeToSupabase(savedEmail, sellerDesc, companies)
+      .then(function () {
+        btnSubscribe.hidden = true;
+        btnNoThanks.hidden = true;
+        subscribeConfirmed.hidden = false;
+      })
+      .catch(function (err) {
+        console.error('Subscribe error:', err);
+        btnSubscribe.disabled = false;
+        btnSubscribe.textContent = 'Yes, subscribe me';
+        alert('Something went wrong. Please try again.');
+      });
   });
 
   btnNoThanks.addEventListener('click', function () {
@@ -333,6 +352,55 @@
 
   function clearErrors() {
     setupForm.querySelectorAll('.setup-form__error').forEach(function (el) { el.remove(); });
+  }
+
+  // ── Supabase subscribe ─────────────────
+  function supabaseHeaders() {
+    return {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
+  }
+
+  function subscribeToSupabase(email, product, companies) {
+    // Check if user already exists
+    return fetch(SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(email) + '&select=id', {
+      headers: supabaseHeaders()
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (existing) {
+      if (existing.length > 0) {
+        // Already subscribed, just resolve
+        return existing[0];
+      }
+      // Create user
+      return fetch(SUPABASE_URL + '/rest/v1/users', {
+        method: 'POST',
+        headers: supabaseHeaders(),
+        body: JSON.stringify({ email: email, product: product })
+      })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Failed to create user: ' + r.status);
+        return r.json();
+      })
+      .then(function (rows) { return rows[0]; });
+    })
+    .then(function (user) {
+      if (!companies.length) return;
+      var rows = companies.map(function (name) {
+        return { user_id: user.id, name: name };
+      });
+      return fetch(SUPABASE_URL + '/rest/v1/companies', {
+        method: 'POST',
+        headers: supabaseHeaders(),
+        body: JSON.stringify(rows)
+      })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Failed to save companies: ' + r.status);
+      });
+    });
   }
 
 })();
