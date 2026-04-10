@@ -5,13 +5,13 @@
   'use strict';
 
   // ── Config ──────────────────────────────
-  var _t = [REDACTED_KEY_BYTES];
-  var PPLX_KEY = atob(_t.map(function(c){return String.fromCharCode(c)}).join(''));
+  // Keys are loaded from the page or prompted — never hardcoded here.
+  var PPLX_KEY = window.SCOOP_PPLX_KEY || '';
   var PPLX_MODEL = 'sonar';
   var PPLX_URL = 'https://api.perplexity.ai/chat/completions';
 
-  var SUPABASE_URL = 'https://REDACTED_SUPABASE_URL';
-  var SUPABASE_KEY = 'REDACTED_SUPABASE_KEY';
+  var SUPABASE_URL = window.SCOOP_SUPABASE_URL || '';
+  var SUPABASE_KEY = window.SCOOP_SUPABASE_KEY || '';
 
   // ── Helpers ─────────────────────────────
   // Extract a clean company name and domain from user input (URL or name)
@@ -104,7 +104,8 @@
     },
     { id: 'news', name: 'Recent News',
       prompt: function (co, s) {
-        return 'Research the latest news about ' + co + ' from the LAST 2 WEEKS ONLY (after March 27, 2026).\n'
+        var cutoff = new Date(Date.now() - 14*24*60*60*1000).toISOString().split('T')[0];
+        return 'Research the latest news about ' + co + ' from the LAST 2 WEEKS ONLY (after ' + cutoff + ').\n'
           + 'I work at Solace and need conversation openers with IT architects and integration leaders at ' + co + '.\n'
           + 'Focus on:\n'
           + '- Technology announcements, platform changes, architecture decisions\n'

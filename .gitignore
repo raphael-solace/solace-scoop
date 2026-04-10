@@ -30,3 +30,6 @@ node_modules/
 *.log
 .playwright-mcp/
 *.png
+
+# Frontend config with keys (use config.example.js as template)
+docs/js/config.js

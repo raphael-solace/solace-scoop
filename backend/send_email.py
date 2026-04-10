@@ -30,7 +30,7 @@ GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 GMAIL_DISPLAY_NAME = os.getenv("GMAIL_DISPLAY_NAME", "Scoop 🐶🗞️")
 
 
-ALLOWED_RECIPIENTS = os.getenv("ALLOWED_RECIPIENTS", "REDACTED_EMAIL").split(",")
+ALLOWED_RECIPIENTS = os.getenv("ALLOWED_RECIPIENTS", "").split(",")
 
 
 def send_raw_email(to: str, subject: str, html: str) -> None:
