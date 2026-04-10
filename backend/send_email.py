@@ -96,47 +96,6 @@ async def send_welcome_email(email: str) -> None:
     await loop.run_in_executor(None, send_raw_email, email, subject, html)
 
 
-async def send_magic_link_email(email: str, link: str) -> None:
-    """Send a magic link email for account access."""
-    if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
-        print(f"  [dry-run] Would send magic link to {email}: {link}")
-        return
-
-    name = email.split("@")[0].replace(".", " ").title()
-    br = cfg["email"]["branding"]
-    em = cfg["email"]
-    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
-<body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
-<tr><td align="center" style="padding:32px 16px;">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:12px; overflow:hidden;">
-  <tr><td style="padding:16px 24px; background:{br['header_bg']};">
-    <img src="{br['header_logo']}" alt="Solace" style="height:22px; display:inline-block; vertical-align:middle; filter:brightness(0) invert(1);"><span style="font-size:12px; font-weight:700; color:{br['badge_color']}; letter-spacing:0.08em; vertical-align:middle; margin-left:8px;">{br['badge_text']}</span>
-  </td></tr>
-  <tr><td style="padding:32px;">
-    <p style="margin:0 0 16px; font-size:16px; font-weight:700; color:#0f172a;">Hi {name},</p>
-    <p style="margin:0 0 24px; font-size:15px; line-height:1.6; color:#475569;">
-      Click below to manage your Scoop account — edit your tracked companies, focus area, and preferences.
-    </p>
-    <p style="margin:0 0 24px; text-align:center;">
-      <a href="{link}" style="display:inline-block; padding:14px 32px; background:linear-gradient(101deg, #ABFF88 1%, #00C895 105%); color:#03213B; font-weight:700; font-size:15px; text-decoration:none; border-radius:100px;">Open My Account</a>
-    </p>
-    <p style="margin:0; font-size:13px; color:#94a3b8;">
-      This link expires in 15 minutes. If you didn't request this, just ignore it.
-    </p>
-  </td></tr>
-  <tr><td style="padding:14px 24px; background:{br['header_bg']}; text-align:center;">
-    <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.5);">{em['footer_text']}</p>
-  </td></tr>
-</table>
-</td></tr></table>
-</body></html>"""
-
-    subject = f"{br['badge_text']} — Sign in to your account"
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, send_raw_email, email, subject, html)
-
-
 def render_digest(user: dict, items: list[dict]) -> str:
     """Build the HTML digest email."""
     today = date.today()
