@@ -37,6 +37,8 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          LITELLM_URL: ${{ secrets.LITELLM_URL }}
+          LITELLM_KEY: ${{ secrets.LITELLM_KEY }}
         run: |
           if [ -n "${{ inputs.user_email }}" ]; then
             python run_digest.py --email "${{ inputs.user_email }}"

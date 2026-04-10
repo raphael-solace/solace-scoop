@@ -1,45 +1,76 @@
 # Solace Scoop
 
-**Agent Mesh Account Intelligence - powered by Solace Agent Mesh.**
+**Account intelligence for Solace colleagues** — powered by Solace Agent Mesh.
 
-A live demo of event-driven AI agents working in parallel to research any company. Five specialized agents (People Intel, Corporate Intel, Market & Competitive, Risk & Compliance, Hiring & Growth) each publish their findings via Solace PubSub+, then a Strategy Orchestrator synthesizes everything into a unified intelligence brief.
+Six AI agents research your customer accounts in parallel: champions & stakeholders, EDA & integration signals, IT initiatives, partner activity, recent news, and competitive threats. A weekly email digest delivers only fresh, verified signals — no stale data, no repeats.
 
-**[Try it live](https://raphael-solace.github.io/solace-scoop/)** - free, no signup.
+**[Live demo](https://raphael-solace.github.io/solace-scoop/)**
 
 ---
 
 ## How it works
 
-1. Enter a company name (and optional context about what you sell)
-2. Five AI agents launch in parallel via Solace Event Mesh
-3. Each agent researches a different dimension (people, financials, market, risks, hiring)
-4. A Strategy Orchestrator synthesizes all findings into an actionable brief
-5. Results display in real time as each agent completes
+1. Colleagues are set up with their customer accounts (via `contacts.md` or `setup_accounts.py`)
+2. Every week, GitHub Actions runs the digest pipeline for each user
+3. Six agents research each account via Perplexity AI (sonar-pro)
+4. A three-layer quality gate filters out stale, vague, or repeated signals
+5. A Solace-branded email lands in the colleague's inbox with actionable intel
 
 ## Architecture
 
 ```
-User Input
+contacts.md / Supabase
     |
     v
-[Solace Event Mesh / PubSub+]
+[Digest Pipeline - 6 agents per company]
     |
-    +---> People Intel Agent --------+
-    +---> Corporate Intel Agent -----+
-    +---> Market & Competitive Agent-+--> Strategy Orchestrator --> Brief
-    +---> Risk & Compliance Agent ---+
-    +---> Hiring & Growth Agent -----+
+    +---> Champions & Stakeholders
+    +---> EDA & Integration
+    +---> IT Initiatives
+    +---> Partner Activity (Accenture, Deloitte...)
+    +---> Recent News (last 14 days only)
+    +---> Risks & Competitive (Confluent, TIBCO, IBM MQ...)
+    |
+    v
+[Ranking] → [Date Filter] → [Dedup] → [LLM Review]
+    |
+    v
+Solace-branded email digest
 ```
 
-Each agent publishes events to the mesh as it completes its research. The orchestrator subscribes to all agent completion events and synthesizes the final brief once all agents have reported.
+## Quality gate
 
-## Tech Stack
+Signals pass through three layers before reaching an inbox:
 
-- **Frontend**: Vanilla HTML/CSS/JS (zero dependencies)
-- **AI**: Perplexity API (`sonar` model) for live web research
-- **Design**: Solace brand (Instrument Serif + Plus Jakarta Sans, Solace green `#00C895`)
-- **Hosting**: GitHub Pages (static, free)
+1. **Date filter** — drops signals with dates older than 14 days and background info
+2. **Headline dedup** — drops signals matching previous digest headlines (Jaccard similarity >50%)
+3. **LLM review** — cheap model (azure-gpt-4o-mini via LiteLLM) drops vague, undated, or repeated signals
 
-## License
+## Configuration
 
-MIT
+All tunable parameters live in `backend/config.yaml`:
+
+```yaml
+digest:
+  companies_per_user: 10
+  signals_per_email: 10
+  news_recency_days: 14
+```
+
+## Setup
+
+```bash
+cp .env.example .env        # fill in API keys
+cd backend
+pip install -r requirements.txt
+python setup_accounts.py     # create users from accounts CSV
+python run_digest.py         # run digest for all users
+```
+
+## Tech stack
+
+- **Frontend**: Vanilla HTML/CSS/JS — GitHub Pages
+- **Backend**: Python / FastAPI — GitHub Actions cron
+- **AI**: Perplexity API (sonar-pro) + LiteLLM (dedup review)
+- **Database**: Supabase (PostgreSQL)
+- **Email**: Gmail SMTP
