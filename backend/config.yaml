@@ -1,0 +1,114 @@
+# ═══════════════════════════════════════════════════════════════
+#  Solace Scoop — Configuration
+#
+#  Edit this file to change digest behavior, email branding,
+#  API settings, and Solace product context.
+#  No code changes needed — just edit and re-run.
+# ═══════════════════════════════════════════════════════════════
+
+
+# ── Digest pipeline ──────────────────────────────────────────
+digest:
+  companies_per_user: 10        # max accounts to research per digest run
+  signals_per_email: 10         # target N signals (may be fewer if quality gate drops stale/dupes)
+  signals_per_query: 3          # max signals each query type can return
+  news_recency_days: 14         # only include news from last N days
+  pace_between_companies_sec: 3 # delay between companies to avoid rate limits
+  pace_between_users_sec: 30    # delay between users during batch runs
+
+
+# ── Perplexity API ───────────────────────────────────────────
+perplexity:
+  model: sonar-pro              # sonar (fast/cheap) or sonar-pro (thorough)
+  max_tokens: 700               # tokens per research query
+  ranking_max_tokens: 200       # tokens for the ranking/dedup pass
+  temperature: 0.1              # lower = more deterministic (0.0–1.0)
+  max_retries: 4                # retry count on 429 rate limits
+  retry_base_delay_sec: 5       # first retry after 5s, then 10s, 20s, 40s
+
+
+# ── LiteLLM (cheap model for freshness & dedup review) ──────
+#    Called once per digest to verify signals are fresh and not
+#    repeated from previous weeks. Costs almost nothing.
+litellm:
+  model: azure-gpt-4o-mini         # cheapest model that follows instructions
+  max_tokens: 1000                  # enough for reviewing ~20 signals
+  temperature: 0.0                  # deterministic for consistent filtering
+  dedup_lookback_weeks: 4           # compare against last N weeks of digests
+
+
+# ── Email ────────────────────────────────────────────────────
+email:
+  subject_template: "\U0001f436\U0001f4f0 {count} signals this week"
+  welcome_subject: "\U0001f436\U0001f4f0 Welcome to Scoop!"
+  first_digest_time: "Monday at 7am"
+  footer_text: "Powered by Solace Agent Mesh"
+
+  branding:
+    header_bg: "#093B5F"        # Solace navy
+    header_logo: "https://solace.com/wp-content/uploads/2025/07/solace-logo.svg"
+    badge_color: "#00C895"      # Solace green
+    badge_text: "SCOOP"
+
+
+# ── Solace context ───────────────────────────────────────────
+#    This is injected into every AI query so the agents
+#    understand what Solace sells and who the buyer is.
+solace:
+  product: >-
+    Solace PubSub+ Event Broker, Event Portal, and Agent Mesh
+    for event-driven architecture and real-time integration
+
+  competitors: >-
+    Confluent/Kafka, IBM MQ, TIBCO, RabbitMQ,
+    AWS EventBridge, Azure Service Bus, Google Pub/Sub
+
+  partners: >-
+    Accenture, Deloitte, Capgemini, Boomi,
+    SAP, Informatica, Wipro, TCS
+
+  buyer_personas: >-
+    IT Architects, Enterprise Architects, Integration Leads,
+    Heads of Integration, CTOs, VPs of Engineering,
+    Platform Engineering Leads, Directors of IT, Solution Architects
+
+  use_cases: >-
+    Event-driven integration, real-time data streaming,
+    hybrid/multi-cloud messaging, microservices communication,
+    IoT event processing, AI agent orchestration,
+    legacy middleware modernization
+
+  keywords: >-
+    event-driven architecture, EDA, pub/sub, message broker,
+    event streaming, real-time integration, event mesh,
+    middleware modernization, API events, event portal,
+    topic hierarchy, event-driven microservices
+
+  buying_triggers: >-
+    Cloud migration project started,
+    legacy middleware end-of-life (TIBCO, IBM MQ),
+    real-time data initiative launched,
+    microservices adoption, IoT project,
+    AI/ML data pipeline needs, multi-cloud strategy,
+    digital transformation program,
+    integration platform consolidation
+
+  deal_killers: >-
+    Just signed multi-year Confluent contract,
+    deep Kafka commitment with dedicated team,
+    recent failed messaging migration,
+    complete IT budget freeze,
+    company in acquisition limbo
+
+  urgency_drivers: >-
+    TIBCO/IBM MQ end-of-support dates,
+    compliance deadlines requiring real-time processing,
+    cloud migration timelines,
+    competitive pressure from real-time competitors,
+    AI initiative deadlines
+
+  product_category: "Event-driven messaging and integration platform"
+
+  industries_served: >-
+    Financial services, healthcare, retail, manufacturing,
+    telecommunications, government, logistics

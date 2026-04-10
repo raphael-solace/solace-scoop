@@ -30,86 +30,107 @@
     return { name: name, domain: domain, raw: input };
   }
 
+  // ── Solace context ──────────────────────
+  var SOLACE_CONTEXT = 'Solace provides PubSub+ Event Broker (hardware, software, cloud), Event Portal for event-driven architecture design and governance, and Agent Mesh for agentic AI. '
+    + 'Key use cases: event-driven integration, real-time data streaming, hybrid/multi-cloud messaging, microservices communication, IoT event processing, and AI agent orchestration. '
+    + 'Competitors: Confluent/Kafka, IBM MQ, TIBCO, RabbitMQ, AWS EventBridge, Azure Service Bus, Google Pub/Sub. '
+    + 'Key partners: Accenture, Deloitte, Boomi, SAP, Informatica. '
+    + 'Buyer personas: IT Architects, Enterprise Architects, Integration Leads, Heads of Integration, CTOs, VPs of Engineering, Platform Engineering Leads, Directors of IT.';
+
   // ── Agents ──────────────────────────────
   var AGENTS = [
-    { id: 'website', name: 'Website Intel',
+    { id: 'champions', name: 'Champions & Stakeholders',
+      prompt: function (co, s, domain) {
+        return 'Research ' + co + ': find the KEY PEOPLE who are champions or stakeholders for integration, middleware, and event-driven architecture decisions.\n'
+          + 'I work at Solace and need to know who my champions and stakeholders are at ' + co + '.\n'
+          + 'Find:\n'
+          + '- IT Architects, Enterprise Architects, Solution Architects, Integration Architects\n'
+          + '- CTOs, VPs of Engineering, Heads of Integration, Heads of Platform\n'
+          + '- Directors of IT, Engineering Managers for integration/middleware/messaging teams\n'
+          + '- Anyone with "integration", "middleware", "event-driven", "messaging", "API", or "platform" in their title\n'
+          + '- Recent hires or role changes in these positions (last 6 months)\n'
+          + '- Their background: where they came from, what technologies they know\n'
+          + '- LinkedIn profiles or conference talks if available\n'
+          + '\nIMPORTANT: Only include information from the last 2 weeks for news/moves. Background info can be older.\n'
+          + '\nMarkdown with ## headers and bullets. Include names, titles, and context. Max 250 words.';
+      }
+    },
+    { id: 'eda', name: 'EDA & Integration',
       prompt: function (co, s, domain) {
         var target = domain ? 'the website ' + domain + ' (company: ' + co + ')' : co;
-        return 'Research ' + target + ' thoroughly.\n'
-          + '## What to find:\n'
-          + '- What does this company DO? What products/services do they offer?\n'
-          + '- What INDUSTRY are they in? (IT, finance, healthcare, manufacturing, retail, etc.)\n'
-          + '- What TECHNOLOGY STACK or platforms do they use or sell?\n'
-          + '- What are their main USE CASES and who are THEIR customers?\n'
-          + '- What technical challenges or initiatives are they likely working on? (cloud migration, API modernization, real-time data, microservices, etc.)\n'
-          + '- Company size, headquarters, and key markets\n'
-          + (domain ? '\nLook at ' + domain + ' directly for product pages, blog posts, case studies, and technical documentation to understand their technology focus.\n' : '')
-          + (s ? '\nThe seller sells: ' + s + '. Based on what you learn about ' + co + ', identify which parts of their business would benefit from this product and why.\n' : '')
+        return 'Research ' + target + ': EVENT-DRIVEN ARCHITECTURE and INTEGRATION landscape.\n'
+          + 'I work at Solace and need to understand how ' + co + ' handles integration and messaging.\n'
+          + 'Find:\n'
+          + '- What messaging, middleware, or event broker technologies does ' + co + ' use? (Kafka, MQ, TIBCO, RabbitMQ, Solace, etc.)\n'
+          + '- Are they doing event-driven architecture, microservices, or real-time data streaming?\n'
+          + '- What cloud providers do they use? (AWS, Azure, GCP, hybrid/multi-cloud)\n'
+          + '- Any integration platforms (MuleSoft, Boomi, Informatica, SAP PI/PO)?\n'
+          + '- Job postings mentioning: event-driven, messaging, middleware, integration, Kafka, MQ, pub/sub, streaming, API gateway\n'
+          + '- Blog posts, conference talks, or case studies about their integration architecture\n'
+          + (domain ? '\nCheck ' + domain + ' for technical documentation, architecture blogs, or technology pages.\n' : '')
+          + '\nIMPORTANT: Only include news/announcements from the last 2 weeks. Technical stack info can be older.\n'
           + '\nMarkdown with ## headers and bullets. Be specific. Max 250 words.';
-      }
-    },
-    { id: 'people', name: 'People Intel',
-      prompt: function (co, s) {
-        return 'Research ' + co + ': KEY CONTACTS for a mid-level sales engagement.\n'
-          + 'I am NOT selling to the CEO or board. I need the people who actually evaluate and buy technology:\n'
-          + '- Directors, VPs, and Heads of IT, Engineering, Architecture, Integration, Data, or Platform teams\n'
-          + '- Technical decision-makers: Enterprise Architects, Solution Architects, Integration Leads\n'
-          + '- Recent hires or role changes in these mid-level leadership positions (last 6 months)\n'
-          + '- Who owns the budget for technology/infrastructure purchases at ' + co + '?\n'
-          + '- LinkedIn profiles or professional background if available\n'
-          + (s ? '\nThe seller sells: ' + s + '. Identify the specific people at ' + co + ' who would evaluate and champion this kind of product. Focus on technical leaders, not executives.\n' : '')
-          + '\nMarkdown with ## headers and bullets. Be specific with names, titles, and dates. Max 200 words.';
-      }
-    },
-    { id: 'techstack', name: 'Tech & Architecture',
-      prompt: function (co, s) {
-        return 'Research ' + co + ': TECHNOLOGY & ARCHITECTURE signals.\n'
-          + '- What technology platforms, middleware, cloud providers, or integration tools does ' + co + ' use?\n'
-          + '- Any recent blog posts, conference talks, or job postings that reveal their tech stack?\n'
-          + '- Are they going through a cloud migration, modernization, or digital transformation?\n'
-          + '- What integration challenges do they likely face given their industry and size?\n'
-          + '- Any public architecture decisions, open-source contributions, or tech blog posts?\n'
-          + '- Job postings that mention specific technologies (Kafka, MQ, API gateways, microservices, event-driven, etc.)\n'
-          + (s ? '\nThe seller sells: ' + s + '. Identify technology signals at ' + co + ' that suggest they need this product or are evaluating alternatives. Look for gaps in their stack.\n' : '')
-          + '\nMarkdown with ## headers and bullets. Max 200 words.';
       }
     },
     { id: 'initiatives', name: 'IT Initiatives',
       prompt: function (co, s) {
-        return 'Research ' + co + ': CURRENT IT & BUSINESS INITIATIVES.\n'
-          + '- Digital transformation programs, cloud migration projects, modernization efforts\n'
-          + '- New product launches or platform changes that require integration work\n'
-          + '- Partnerships, vendor selections, or RFPs related to IT infrastructure\n'
-          + '- Conference presentations, webinars, or case studies by ' + co + ' employees about ongoing projects\n'
-          + '- Budget announcements or investment areas ("investing in real-time", "modernizing our architecture", etc.)\n'
-          + '- Any press releases about technology partnerships or platform changes\n'
-          + (s ? '\nThe seller sells: ' + s + '. Focus on initiatives at ' + co + ' where this product would be relevant. What projects are they working on that need this?\n' : '')
-          + '\nMarkdown with ## headers and bullets. Be specific with project names, timelines, and scope. Max 200 words.';
+        return 'Research ' + co + ': CURRENT IT & TECHNOLOGY INITIATIVES relevant to event-driven architecture and integration.\n'
+          + 'I work at Solace and need to know what ' + co + ' is building that could use event brokers, messaging, or integration middleware.\n'
+          + 'Find:\n'
+          + '- Cloud migration projects (hybrid cloud, multi-cloud strategies)\n'
+          + '- Digital transformation programs involving real-time data or event-driven patterns\n'
+          + '- Modernization from legacy middleware (TIBCO, IBM MQ, MuleSoft) to cloud-native\n'
+          + '- IoT or edge computing initiatives that need event streaming\n'
+          + '- AI/ML data pipeline projects needing real-time event feeds\n'
+          + '- Microservices or API modernization programs\n'
+          + '- Budget announcements or investment areas in integration/middleware\n'
+          + '\nIMPORTANT: Only include information from the last 2 weeks. Skip anything older.\n'
+          + '\nMarkdown with ## headers and bullets. Be specific with project names and timelines. Max 200 words.';
       }
     },
-    { id: 'hiring', name: 'Hiring Signals',
+    { id: 'partners', name: 'Partner Activity',
       prompt: function (co, s) {
-        return 'Research ' + co + ': HIRING PATTERNS that signal technology investments.\n'
-          + '- Volume of open roles in IT, engineering, architecture, integration, data, platform, DevOps\n'
-          + '- Clusters of similar roles (e.g., "8 data engineers in 2 weeks" = building something)\n'
-          + '- New team formation (first-ever "Head of Platform" = new initiative)\n'
-          + '- Job descriptions mentioning specific technologies, tools, or migration keywords\n'
-          + '- Contractor/consultant postings (often precede major projects)\n'
-          + '- Hiring freezes or sudden posting removals (risk signal)\n'
-          + (s ? '\nThe seller sells: ' + s + '. Focus on hiring patterns at ' + co + ' that suggest they are investing in areas where this product fits. Keywords in job descriptions are gold.\n' : '')
-          + '\nMarkdown with ## headers and bullets. Patterns matter more than individual postings. Max 200 words.';
+        return 'Research ' + co + ': PARTNER AND SYSTEMS INTEGRATOR ACTIVITY.\n'
+          + 'I work at Solace and need to know which consulting firms and technology partners are active at ' + co + '.\n'
+          + 'Find:\n'
+          + '- Is Accenture, Deloitte, Capgemini, Wipro, TCS, Infosys, or Cognizant working with ' + co + ' on integration or digital transformation?\n'
+          + '- Any recent consulting engagements, RFPs, or project awards involving integration, middleware, or event-driven architecture?\n'
+          + '- Technology partnerships with Confluent, TIBCO, IBM, MuleSoft, Boomi, SAP, Informatica?\n'
+          + '- Any systems integrator hiring specifically for ' + co + ' projects?\n'
+          + '- Conference co-presentations or joint case studies between ' + co + ' and any consulting firm or tech vendor?\n'
+          + '\nIMPORTANT: Only include news from the last 2 weeks. Skip anything older.\n'
+          + '\nMarkdown with ## headers and bullets. Name the partners and the nature of the engagement. Max 200 words.';
       }
     },
-    { id: 'news', name: 'Industry News',
+    { id: 'news', name: 'Recent News',
       prompt: function (co, s) {
-        return 'Research the latest news about ' + co + ' from the past 30 days, with a focus on IT, technology, and industry developments.\n'
-          + '- Technology announcements, platform updates, product launches\n'
-          + '- Industry news that affects ' + co + ' (regulations, market shifts, competitor moves)\n'
-          + '- Conference appearances, keynotes, or thought leadership by ' + co + ' employees\n'
-          + '- Partnerships, integrations, or ecosystem announcements\n'
-          + '- Anything a mid-level salesperson could reference in a conversation with a Director or VP of IT/Engineering at ' + co + '\n'
-          + (s ? '\nThe seller sells: ' + s + '. Focus on news that creates a natural, relevant conversation opener when talking to a technical leader at ' + co + '. Skip generic corporate announcements unless they reveal technology direction.\n' : '')
-          + '\nMarkdown with ## headers and bullets. Be specific with dates and sources. Max 200 words.';
+        return 'Research the latest news about ' + co + ' from the LAST 2 WEEKS ONLY (after March 27, 2026).\n'
+          + 'I work at Solace and need conversation openers with IT architects and integration leaders at ' + co + '.\n'
+          + 'Focus on:\n'
+          + '- Technology announcements, platform changes, architecture decisions\n'
+          + '- Industry news affecting ' + co + ' (regulations, market shifts, M&A)\n'
+          + '- Hiring or restructuring in IT, engineering, or architecture teams\n'
+          + '- Partnerships, vendor selections, or integration project announcements\n'
+          + '- Conference appearances or thought leadership by ' + co + ' tech leaders\n'
+          + '- Anything related to event-driven architecture, messaging, integration, real-time data, microservices, or cloud migration\n'
+          + '\nSTRICT RULE: Every item MUST have happened in the last 2 weeks. If nothing recent, say "No news in the last 2 weeks" -- do NOT backfill with older news.\n'
+          + '\nMarkdown with ## headers and bullets. Include dates and sources. Max 200 words.';
+      }
+    },
+    { id: 'risks', name: 'Risks & Competitive',
+      prompt: function (co, s) {
+        return 'Research ' + co + ': RISK SIGNALS and COMPETITIVE MOVES relevant to Solace.\n'
+          + 'I work at Solace and need to protect my accounts and spot competitive threats.\n'
+          + 'Find:\n'
+          + '- Has ' + co + ' recently adopted or evaluated Confluent/Kafka, IBM MQ, TIBCO, RabbitMQ, AWS EventBridge, Azure Service Bus, or Google Pub/Sub?\n'
+          + '- Job postings mentioning competitor product names (Kafka, TIBCO, IBM MQ, Confluent)\n'
+          + '- Layoffs, hiring freezes, or budget cuts in IT/engineering at ' + co + '\n'
+          + '- Key departures: architects, integration leads, or engineering managers leaving\n'
+          + '- Restructuring or org changes in technology teams\n'
+          + '- Signals that ' + co + ' is consolidating or switching middleware/messaging vendors\n'
+          + '- Any complaints or migration away from current integration platform\n'
+          + '\nIMPORTANT: Only include events from the last 2 weeks. If nothing concerning found, say "No risk signals detected."\n'
+          + '\nMarkdown with ## headers and bullets. Be specific about scope and impact. Max 200 words.';
       }
     }
   ];
@@ -140,12 +161,16 @@
     });
   });
 
+  // ── DOM: setup email ────────────────────
+  var setupEmail = document.getElementById('setup-email');
+
   // ── Hero form: save email, scroll to setup ──
   heroForm.addEventListener('submit', function (e) {
     e.preventDefault();
     var email = heroEmail.value.trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { heroEmail.focus(); return; }
     savedEmail = email;
+    setupEmail.value = email;
     var target = document.getElementById('setup');
     window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
     setTimeout(function () { document.getElementById('seller-desc').focus(); }, 600);
@@ -156,19 +181,27 @@
     e.preventDefault();
     clearErrors();
 
+    var email = setupEmail.value.trim();
     var sellerDesc = document.getElementById('seller-desc').value.trim();
-    var sellerUrl = document.getElementById('seller-url').value.trim();
+    var sellerUrl = email.split('@')[1];
     var companiesRaw = document.getElementById('companies').value.trim();
 
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('setup-email', 'Enter a valid email so we can send your weekly briefs.'); return; }
     if (!sellerDesc) { showError('seller-desc', 'Tell us what you sell so agents can tailor the brief.'); return; }
     if (!companiesRaw) { showError('companies', 'Add at least one company.'); return; }
 
     var companiesParsed = companiesRaw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 10).map(parseCompanyInput);
     if (!companiesParsed.length) { showError('companies', 'Add at least one company or website.'); return; }
 
+    savedEmail = email;
     savedSellerDesc = sellerDesc;
     savedCompanies = companiesParsed.map(function (c) { return c.raw; });
     var sellerContext = sellerDesc + (sellerUrl ? ' (' + sellerUrl + ')' : '');
+
+    // Subscribe immediately
+    subscribeToSupabase(savedEmail, savedSellerDesc, savedCompanies).catch(function (err) {
+      console.error('Subscribe error:', err);
+    });
 
     // Loading
     btnSubmit.querySelector('.btn__text').hidden = true;
@@ -197,31 +230,6 @@
     });
   });
 
-  // ── Subscribe handler (event delegation) ─
-  resultsContainer.addEventListener('click', function (e) {
-    var btn = e.target.closest('.scoop-subscribe-btn');
-    if (!btn || btn.disabled) return;
-
-    btn.disabled = true;
-    btn.textContent = 'Subscribing...';
-
-    subscribeToSupabase(savedEmail, savedSellerDesc, savedCompanies)
-      .then(function () {
-        // Update ALL subscribe CTAs across all cards
-        resultsContainer.querySelectorAll('.result-card__cta').forEach(function (cta) {
-          cta.innerHTML =
-            '<div class="result-card__subscribed">'
-            + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
-            + '<span>Subscribed! Your first full brief arrives Monday.</span>'
-            + '</div>';
-        });
-      })
-      .catch(function (err) {
-        console.error('Subscribe error:', err);
-        btn.disabled = false;
-        btn.textContent = 'Subscribe for weekly briefs';
-      });
-  });
 
   // ── Run mesh for one company ────────────
   function runCompanyMesh(company, sellerContext, companyIdx, onDone) {
@@ -245,7 +253,7 @@
     var agentResults = {};
     var completed = 0;
     var loadingText = document.getElementById('loading-text-' + companyIdx);
-    var sysPrm = 'You are a specialized agent in a Solace Agent Mesh, helping mid-level B2B salespeople stay informed about their accounts. Focus on signals useful for talking to Directors, VPs, and technical leaders -- not the CEO or board. Be concise, factual, and focus on technology, architecture, and operational signals. Use markdown ## headers and bullet points.';
+    var sysPrm = 'You are a specialized agent in a Solace Agent Mesh, helping Solace sales colleagues stay informed about their customer accounts. ' + SOLACE_CONTEXT + ' Focus on signals useful for talking to IT Architects, Integration Leads, CTOs, and Heads of Integration. Be concise, factual, and focus on event-driven architecture, integration, messaging, and real-time data signals. Only report information from the last 2 weeks for news items. Use markdown ## headers and bullet points.';
 
     AGENTS.forEach(function (agent, idx) {
       setTimeout(function () {
@@ -272,15 +280,16 @@
     var findings = '';
     AGENTS.forEach(function (a) { findings += '\n\n## ' + a.name + '\n' + (agentResults[a.id] || '(no data)'); });
 
-    var sysPrm = 'You are a sales intelligence agent helping a mid-level B2B salesperson. Produce ultra-concise account updates focused on what matters for talking to Directors, VPs, and technical leaders. Use markdown bullet points only. No headers. No preamble. No closing remarks.';
-    var usrPrm = 'Based on these agent findings about ' + company + ', write EXACTLY 3 bullet points summarizing the most actionable signals for a salesperson who talks to technical leaders and mid-level decision-makers (NOT the CEO/CTO).\n\nAGENT FINDINGS:' + findings + '\n\n'
-      + (sellerContext ? 'THE SALESPERSON SELLS: ' + sellerContext + '\n\n' : '')
+    var sysPrm = 'You are a sales intelligence agent helping a Solace colleague stay informed about their customer accounts. ' + SOLACE_CONTEXT + ' Produce ultra-concise account updates focused on what matters for talking to IT Architects, Integration Leads, CTOs, and Heads of Integration. Use markdown bullet points only. No headers. No preamble. No closing remarks.';
+    var usrPrm = 'Based on these agent findings about ' + company + ', write EXACTLY 3 bullet points summarizing the most actionable signals for a Solace colleague.\n\nAGENT FINDINGS:' + findings + '\n\n'
+      + 'CONTEXT: The Solace colleague sells PubSub+ Event Broker, Event Portal, and Agent Mesh.\n\n'
       + 'Rules:\n'
       + '- Exactly 3 bullet points, no more, no less\n'
       + '- Each bullet is one sentence, specific (names, dates, numbers)\n'
       + '- No headers, no sections, no preamble, no closing\n'
-      + '- Prioritize: technology initiatives, architecture changes, hiring patterns, integration projects, IT modernization signals\n'
-      + '- Frame each signal as something you could bring up in a conversation with a Director of IT, VP of Engineering, or Enterprise Architect\n'
+      + '- Prioritize: event-driven architecture moves, integration platform changes, messaging/middleware decisions, champion/stakeholder updates, partner activity (Accenture, Deloitte, etc.), and competitive threats (Confluent, TIBCO, IBM MQ)\n'
+      + '- Frame each signal as something you could bring up with an IT Architect, Integration Lead, or CTO at ' + company + '\n'
+      + '- ONLY include facts from the last 2 weeks for news items\n'
       + '- Max 75 words total';
 
     callPerplexity(sysPrm, usrPrm, 200)
@@ -301,14 +310,13 @@
     var strategy = agentResults['strategy'] || '';
     var stratEl = document.getElementById('strategy-' + companyIdx);
 
-    var ctaHtml = '';
-    if (savedEmail) {
-      ctaHtml =
-        '<div class="result-card__cta">'
-        + '<p class="result-card__cta-text">This is just a preview. Subscribe to get the full weekly brief with conversation openers, buying signals, risk alerts, and next steps for <strong>' + esc(company) + '</strong>.</p>'
-        + '<button class="btn btn--lg scoop-subscribe-btn">Subscribe for weekly briefs</button>'
-        + '</div>';
-    }
+    var ctaHtml =
+      '<div class="result-card__cta">'
+      + '<div class="result-card__subscribed">'
+      + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
+      + '<span>Subscribed! Your first full brief arrives Monday.</span>'
+      + '</div>'
+      + '</div>';
 
     stratEl.innerHTML =
       '<div class="result-card result-card--scoop">'

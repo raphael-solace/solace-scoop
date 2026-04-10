@@ -1,9 +1,11 @@
-name: Check Replies
+name: Check Replies (disabled)
 
+# Reply mechanism disabled — re-enable when needed
+# on:
+#   schedule:
+#     - cron: '*/15 * * * *'
+#   workflow_dispatch: {}
 on:
-  schedule:
-    # Every 15 minutes (GitHub Actions minimum practical interval)
-    - cron: '*/15 * * * *'
   workflow_dispatch: {}
 
 jobs:

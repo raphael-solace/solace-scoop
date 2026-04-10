@@ -20,7 +20,7 @@ load_dotenv()
 
 
 async def main(email: str | None = None) -> None:
-    from db import get_all_users, get_user_by_email
+    from db import get_all_users, get_user_by_email, save_digest
     from digest import generate_digest_for_user
     from send_email import send_digest_email
 
@@ -41,6 +41,7 @@ async def main(email: str | None = None) -> None:
             items = await generate_digest_for_user(user)
             if items:
                 await send_digest_email(user, items)
+                await save_digest(user["id"], items)
                 print(f"  Sent digest to {user['email']} ({len(items)} items)")
             else:
                 print(f"  No signals found for {user['email']}")

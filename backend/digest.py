@@ -1,16 +1,16 @@
 """
-Scoop Digest Pipeline
+Scoop Digest Pipeline — Solace Internal
 
 Four-pass approach:
-  1. Deep research on the seller (product, buyers, triggers, deal killers, urgency drivers).
-  2. Website intel: understand what each target company actually does, their industry, and tech stack.
-  3. For each target account, run 8 parallel queries tuned to mid-level sellers:
-     website/tech intel, people (technical leaders, not C-suite), IT initiatives,
-     hiring velocity, partnerships, financial events, risk signals, competitive moves.
-  4. Rank by urgency and impact, deduplicate, return top signals.
+  1. Skip seller research (hardcoded Solace context).
+  2. For each customer account, run 6 parallel queries focused on:
+     champions/stakeholders, EDA/integration signals, IT initiatives,
+     partner activity, recent news (2 weeks only), risks & competitive.
+  3. Rank by urgency and impact, deduplicate, return top signals.
 
-Designed for mid-level B2B salespeople who talk to Directors, VPs, and technical leaders
--- not the CEO or board. Signals focus on technology, architecture, and IT operations.
+Designed for Solace colleagues tracking their customer accounts.
+Signals focus on event-driven architecture, integration, messaging,
+champions (IT Architects, Integration Leads, CTOs), and partner activity.
 
 At $3/1000 Perplexity queries, thoroughness is cheap. Bad intel is expensive.
 """
@@ -24,8 +24,10 @@ from typing import Optional
 
 import httpx
 
+from config import cfg
+
 PPLX_API_URL = "https://api.perplexity.ai/chat/completions"
-PPLX_MODEL = "sonar-pro"
+PPLX_MODEL = cfg["perplexity"]["model"]
 
 SIGNAL_CATEGORIES = {
     # People (mid-level focus)
@@ -43,11 +45,15 @@ SIGNAL_CATEGORIES = {
     # Growth
     "hiring": {"tag": "Hiring Signal", "color": "green"},
     "partnership": {"tag": "Partnership", "color": "green"},
+    "partner_activity": {"tag": "Partner Activity", "color": "green"},
     "expansion": {"tag": "Expansion", "color": "green"},
     "funding": {"tag": "Funding", "color": "green"},
     # Financial
     "financial_event": {"tag": "Financial", "color": "green"},
     "earnings_language": {"tag": "Earnings", "color": "green"},
+    # Champions
+    "champion_change": {"tag": "Champion Update", "color": "red"},
+    "stakeholder_move": {"tag": "Stakeholder Move", "color": "red"},
     # Risk
     "risk_layoffs": {"tag": "Risk: Layoffs", "color": "red"},
     "risk_reorg": {"tag": "Risk: Reorg", "color": "red"},
@@ -69,30 +75,40 @@ ALL_TAGS = ", ".join(SIGNAL_CATEGORIES.keys())
 
 # ── Perplexity helpers ───────────────────────
 
-async def _pplx_query(system: str, prompt: str, max_tokens: int = 700) -> dict:
+async def _pplx_query(system: str, prompt: str, max_tokens: int | None = None) -> dict:
     api_key = os.getenv("PPLX_KEY")
     if not api_key:
         raise RuntimeError("PPLX_KEY not set")
 
-    async with httpx.AsyncClient(timeout=60) as client:
-        resp = await client.post(
-            PPLX_API_URL,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": PPLX_MODEL,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": prompt},
-                ],
-                "max_tokens": max_tokens,
-                "temperature": 0.1,
-            },
-        )
-        resp.raise_for_status()
-    return resp.json()
+    pplx_cfg = cfg["perplexity"]
+    payload = {
+        "model": PPLX_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        "max_tokens": max_tokens or pplx_cfg["max_tokens"],
+        "temperature": pplx_cfg["temperature"],
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    max_retries = pplx_cfg["max_retries"]
+    base_delay = pplx_cfg["retry_base_delay_sec"]
+    for attempt in range(max_retries):
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(PPLX_API_URL, headers=headers, json=payload)
+            if resp.status_code == 429:
+                wait = 2 ** attempt * base_delay
+                print(f"      [rate-limited] waiting {wait}s before retry...")
+                await asyncio.sleep(wait)
+                continue
+            resp.raise_for_status()
+        return resp.json()
+
+    raise RuntimeError(f"Perplexity API rate limit exceeded after {max_retries} retries")
 
 
 def _parse_json(content: str) -> dict | list:
@@ -102,161 +118,117 @@ def _parse_json(content: str) -> dict | list:
     return json.loads(content)
 
 
-# ── Pass 1: Deep seller research ─────────────
+# ── Solace context (hardcoded) ────────────────
 
-async def research_seller(product: str) -> dict:
-    data = await _pplx_query(
-        system="You are a B2B sales intelligence analyst. Return only valid JSON.",
-        prompt=f"""Research "{product}" thoroughly as a B2B product/company.
-I need to understand this deeply for sales intelligence purposes.
-IMPORTANT: The salesperson using this tool is a mid-level rep who talks to Directors, VPs, and technical leaders -- NOT the CEO or board. Focus the buyer personas on technical decision-makers.
-
-Respond in this exact JSON format (no markdown, no code fences):
-{{
-    "company_summary": "<2-3 sentences on what this company/product does>",
-    "industry": "<the seller's primary industry>",
-    "buyer_personas": "<comma-separated list of 5-8 MID-LEVEL job titles who evaluate and buy this product. Focus on Directors, VPs, Heads of departments, Enterprise Architects, Solution Architects, Engineering Managers, Platform Leads -- NOT CEO, CTO, CFO>",
-    "use_cases": "<the top 5 technical problems this product solves, comma-separated>",
-    "buying_triggers": "<7-10 specific technical/operational events that would create a sales opportunity, e.g. 'cloud migration project started', 'legacy middleware end-of-life', 'real-time data initiative launched', comma-separated>",
-    "deal_killers": "<5-7 events or situations that would KILL a deal or indicate the prospect is NOT a buyer. e.g., 'just signed a 3-year contract with competitor X', 'hiring freeze in IT department', 'recently failed implementation of similar tool'>",
-    "urgency_drivers": "<What creates URGENCY to buy NOW vs. next quarter? Compliance deadlines, technology end-of-life, migration timelines, competitive pressure, project deadlines, etc.>",
-    "competitors": "<top 3-5 competitors, comma-separated>",
-    "keywords": "<10 technical keywords and phrases a prospect would use when they need this product, comma-separated. Include technology terms, architecture patterns, and integration concepts.>",
-    "product_category": "<one short phrase describing the category, e.g. 'event-driven messaging', 'observability platform', 'API management'>",
-    "industries_served": "<top 5 industries where this product is most commonly sold, comma-separated>"
-}}""",
-        max_tokens=700,
-    )
-    content = data["choices"][0]["message"]["content"]
-    return _parse_json(content)
+def get_solace_context() -> dict:
+    """Return the Solace seller context from config.yaml (no API call needed)."""
+    s = cfg["solace"]
+    return {
+        "company_summary": s["product"],
+        "industry": "Enterprise middleware, integration, and event-driven architecture",
+        "buyer_personas": s["buyer_personas"],
+        "use_cases": s["use_cases"],
+        "buying_triggers": s["buying_triggers"],
+        "deal_killers": s.get("deal_killers", ""),
+        "urgency_drivers": s.get("urgency_drivers", ""),
+        "competitors": s["competitors"],
+        "keywords": s["keywords"],
+        "product_category": s.get("product_category", "Event-driven messaging and integration platform"),
+        "industries_served": s.get("industries_served", ""),
+        "partners": s["partners"],
+    }
 
 
 # ── Pass 2: 8 query types per company ────────
 
 QUERY_TYPES = [
     {
-        "name": "website_intel",
-        "prompt": """Research {company} website and online presence to understand what this company actually does.
-Look for:
-- What products or services does {company} offer?
-- What industry are they in? (IT, finance, healthcare, manufacturing, retail, logistics, etc.)
-- What technology stack, platforms, or technical architecture do they use or sell?
-- What are their main use cases and who are THEIR customers?
-- What technical challenges are they likely working on? (cloud migration, API modernization, real-time data, microservices, event-driven architecture, etc.)
-- Company size, headquarters, and key markets
-- Blog posts, case studies, or technical documentation that reveal their technology direction
-
-This context is critical -- we need to understand {company}'s business so other queries can find RELEVANT signals for selling {product_category} to them.
-If nothing found, say so clearly.""",
+        "name": "champions_stakeholders",
+        "prompt": """Find the KEY PEOPLE at {company} who are champions or stakeholders for integration, middleware, and event-driven architecture decisions.
+I work at Solace and need to know who my champions and stakeholders are at {company}.
+Find:
+- IT Architects, Enterprise Architects, Solution Architects, Integration Architects
+- CTOs, VPs of Engineering, Heads of Integration, Heads of Platform
+- Directors of IT, Engineering Managers for integration/middleware/messaging teams
+- Anyone with "integration", "middleware", "event-driven", "messaging", "API", or "platform" in their title
+- Recent hires or role changes in these positions (last 6 months)
+- Their background: where they came from, what technologies they know
+Include the person's NAME, their TITLE, and background if known.
+IMPORTANT: Only include news/moves from the last 2 weeks. Background info can be older.
+If no relevant people found, say so clearly.""",
     },
     {
-        "name": "people_moves",
-        "prompt": """Find recent role changes, appointments, departures, or promotions
-at {company} in the last 30 days. Focus on MID-LEVEL TECHNICAL LEADERS, not the CEO or board:
-- Directors, VPs, and Heads of IT, Engineering, Architecture, Integration, Data, or Platform teams
-- Enterprise Architects, Solution Architects, Integration Leads
-- Engineering Managers, Platform Engineering Leads, DevOps/SRE leaders
-- Roles like: {buyer_personas}
-
-Include the person's NAME, their new TITLE, and where they came from if known.
-Skip C-suite roles unless they directly manage the department that buys {product_category}.
-A new VP of Engineering or Director of Platform is more relevant than a new CEO.
-If no relevant people moves found, say so clearly.""",
-    },
-    {
-        "name": "tech_stack_signals",
-        "prompt": """Research the TECHNOLOGY STACK and ARCHITECTURE decisions at {company}.
-Look for:
-- What platforms, middleware, cloud providers, or integration tools does {company} use?
-- Job postings mentioning specific technologies (Kafka, MQ, API gateways, microservices, event-driven, Kubernetes, etc.)
-- Blog posts, conference talks, or case studies by {company} employees about their tech stack
-- Open-source contributions or GitHub repositories from {company}
-- Technology partnerships or certified integrations
-- Architecture decisions or migration projects mentioned publicly
+        "name": "eda_integration",
+        "prompt": """Research the EVENT-DRIVEN ARCHITECTURE and INTEGRATION landscape at {company}.
+I work at Solace and need to understand how {company} handles integration and messaging.
+Find:
+- What messaging, middleware, or event broker technologies does {company} use? (Kafka, MQ, TIBCO, RabbitMQ, Solace, etc.)
+- Are they doing event-driven architecture, microservices, or real-time data streaming?
+- What cloud providers do they use? (AWS, Azure, GCP, hybrid/multi-cloud)
+- Any integration platforms (MuleSoft, Boomi, Informatica, SAP PI/PO)?
+- Job postings mentioning: event-driven, messaging, middleware, integration, Kafka, MQ, pub/sub, streaming, API gateway
+- Blog posts, conference talks, or case studies about their integration architecture
 - Keywords in job descriptions that match: {keywords}
-
-The insight we need: What is {company}'s current technology landscape, and where does {product_category} fit or compete?
+IMPORTANT: Only include news/announcements from the last 2 weeks. Technical stack info can be older.
 If nothing found, say so clearly.""",
     },
     {
         "name": "it_initiatives",
-        "prompt": """Find recent IT and technology initiatives at {company} in the last 30 days.
-Look for:
-- Digital transformation programs, cloud migration projects, modernization efforts
-- New platform builds, architecture overhauls, API strategy initiatives
-- Integration projects, data pipeline work, real-time processing initiatives
-- Programs related to: {use_cases}
-- Budget increases for IT, engineering, or platform teams
-- RFPs, vendor evaluations, or procurement processes for technology
+        "prompt": """Find current IT and technology initiatives at {company} relevant to event-driven architecture and integration.
+I work at Solace and need to know what {company} is building that could use event brokers, messaging, or integration middleware.
+Find:
+- Cloud migration projects (hybrid cloud, multi-cloud strategies)
+- Digital transformation programs involving real-time data or event-driven patterns
+- Modernization from legacy middleware (TIBCO, IBM MQ, MuleSoft) to cloud-native
+- IoT or edge computing initiatives that need event streaming
+- AI/ML data pipeline projects needing real-time event feeds
+- Microservices or API modernization programs
+- Budget announcements or investment areas in integration/middleware
 - Anything matching these buying triggers: {buying_triggers}
-
-Include specific details: project scope, technologies mentioned, timeline.
-Focus on operational and technical initiatives that a Director of IT or VP of Engineering would own.
+IMPORTANT: Only include information from the last 2 weeks. Skip anything older.
 If nothing found, say so clearly.""",
     },
     {
-        "name": "hiring_velocity",
-        "prompt": """Analyze the HIRING PATTERNS at {company}. Not just individual job postings, but the VOLUME and VELOCITY of hiring.
-Look for:
-- Total number of open roles in IT, engineering, architecture, integration, data, platform, DevOps
-- CLUSTERS of similar roles (e.g., "12 data engineers posted in 2 weeks" = building something big)
-- New team formation signals (e.g., first-ever "Head of Platform Engineering" = new department)
-- Seniority patterns (hiring a VP before ICs = early stage; hiring 20 ICs = scaling)
-- Keywords in job descriptions that match: {keywords}
-- Contractor/consultant postings (often precede major projects)
-
-The insight we need is: WHAT IS {company} BUILDING and HOW FAST?
-
-A single job posting is noise. A pattern of 10+ related postings in the same month is a signal.
-Also note: hiring freezes or sudden job posting removals are RISK signals.
-If nothing found beyond normal hiring activity, say so clearly.""",
-    },
-    {
-        "name": "partnerships_vendors",
-        "prompt": """Find recent technology partnerships, vendor selections, or platform decisions
-at {company} in the last 30 days relevant to someone selling {product_category}. Look for:
-- New technology vendor announcements (cloud, middleware, integration, data platforms)
-- Strategic technology partnerships that change {company}'s architecture
-- Competitor deployments (competitors include: {competitors})
-- Conference presentations or case studies where {company} discussed their technology choices
-- Integration partner announcements or marketplace listings
-
-Include specific vendor names, technologies, and details.
+        "name": "partner_activity",
+        "prompt": """Research PARTNER AND SYSTEMS INTEGRATOR ACTIVITY at {company}.
+I work at Solace and need to know which consulting firms and technology partners are active at {company}.
+Find:
+- Is Accenture, Deloitte, Capgemini, Wipro, TCS, Infosys, or Cognizant working with {company} on integration or digital transformation?
+- Any recent consulting engagements, RFPs, or project awards involving integration, middleware, or event-driven architecture?
+- Technology partnerships with Confluent, TIBCO, IBM, MuleSoft, Boomi, SAP, Informatica?
+- Any systems integrator hiring specifically for {company} projects?
+- Conference co-presentations or joint case studies between {company} and any consulting firm or tech vendor?
+IMPORTANT: Only include news from the last 2 weeks. Skip anything older.
 If nothing relevant found, say so clearly.""",
     },
     {
-        "name": "risk_signals",
-        "prompt": """Find recent NEGATIVE or WARNING signals at {company} in the last 60 days.
-This is about protecting existing deals and spotting churn risk.
-Look for:
-- Layoffs, hiring freezes, or headcount reductions -- especially in IT/engineering
-- Restructuring, department mergers, or org chart changes in technical teams
-- Key technical leader departures (Directors, VPs of Engineering, Architects)
-- Budget cuts or "cost optimization" language targeting IT spend
-- Office closures or team consolidation
-- Failed technology projects, outages, or public technical issues
-- Customer complaints about {company}'s own product reliability
-
-Be specific about the SCOPE of the negative signal. "Laid off 50 in engineering"
-is very different from "laid off 50 in marketing."
-
-If nothing concerning found, explicitly state "No risk signals detected" --
-that itself is useful information for a sales rep.""",
+        "name": "recent_news",
+        "prompt": """Find the latest news about {company} from the LAST 2 WEEKS ONLY.
+I work at Solace and need conversation openers with IT architects and integration leaders at {company}.
+Focus on:
+- Technology announcements, platform changes, architecture decisions
+- Industry news affecting {company} (regulations, market shifts, M&A)
+- Hiring or restructuring in IT, engineering, or architecture teams
+- Partnerships, vendor selections, or integration project announcements
+- Conference appearances or thought leadership by {company} tech leaders
+- Anything related to event-driven architecture, messaging, integration, real-time data, microservices, or cloud migration
+STRICT RULE: Every item MUST have happened in the last 2 weeks. If nothing recent, say "No news in the last 2 weeks" -- do NOT backfill with older news.
+If nothing found, say so clearly.""",
     },
     {
-        "name": "competitive_moves",
-        "prompt": """Find recent competitive intelligence relevant to selling {product_category} to {company}.
-Look for:
-- Has {company} recently adopted, evaluated, or mentioned any of these competitors: {competitors}?
-- Job postings at {company} that mention competitor product names or related technologies
-- Conference talks or blog posts by {company} employees about tools/platforms they use in the {product_category} space
-- Case studies or testimonials where {company} is featured as a customer of a competitor
-- Architecture decisions that favor or disfavor {product_category}
-- Any public statements about switching, replacing, or consolidating vendors
-
-IMPORTANT: Also look for signals that {company} is UNHAPPY with their current
-solution. Migration projects, "replacing legacy systems", hiring for skills
-associated with switching platforms -- all gold for a mid-level sales rep.
+        "name": "risks_competitive",
+        "prompt": """Find RISK SIGNALS and COMPETITIVE MOVES at {company} relevant to Solace.
+I work at Solace and need to protect my accounts and spot competitive threats.
+Find:
+- Has {company} recently adopted or evaluated Confluent/Kafka, IBM MQ, TIBCO, RabbitMQ, AWS EventBridge, Azure Service Bus, or Google Pub/Sub?
+- Job postings at {company} mentioning competitor product names (Kafka, TIBCO, IBM MQ, Confluent)
+- Layoffs, hiring freezes, or budget cuts in IT/engineering at {company}
+- Key departures: architects, integration leads, or engineering managers leaving
+- Restructuring or org changes in technology teams
+- Signals that {company} is consolidating or switching middleware/messaging vendors
+- Any complaints or migration away from current integration platform
+IMPORTANT: Only include events from the last 2 weeks.
+If nothing concerning found, say "No risk signals detected."
 If nothing found, say so clearly.""",
     },
 ]
@@ -273,23 +245,28 @@ Return this exact format (no markdown, no code fences):
     "company": "{company}",
     "tag": "<one of: {all_tags}>",
     "headline": "<one specific sentence with names, dates, and concrete details>",
-    "why": "<one sentence connecting this to selling {product}, referencing which mid-level technical leader (Director, VP, Architect) would care and why this changes the deal dynamic>",
+    "date_mentioned": "<YYYY-MM-DD of when this event happened or was published. If you cannot determine a specific date, use empty string. Do NOT guess or invent dates.>",
+    "signal_type": "<one of: event, person_move, job_posting, announcement, background. Use 'background' ONLY for tech stack or company context that is not tied to a specific recent event.>",
+    "why": "<one sentence connecting this to Solace (event broker, EDA, Agent Mesh), referencing which stakeholder (IT Architect, Integration Lead, CTO, Head of Integration) would care and why this changes the deal dynamic>",
     "urgency": "<one of: IMMEDIATE, THIS_WEEK, THIS_MONTH, THIS_QUARTER>",
     "window": "<Why this timing matters. e.g., 'New CTO has 90 days to audit the stack.' or 'Compliance deadline is June 30.'>",
     "opening_line": "<A natural, non-salesy sentence the rep can use to start a conversation referencing this signal. e.g., 'I saw [name] just joined as CTO. Congrats on the hire.'>",
     "risk_or_opportunity": "<one of: opportunity, risk, both>",
-    "suggested_action": "<Specific next step. Include: who to contact (mid-level title like Director/VP/Architect, NOT CEO/CTO), what channel (email/LinkedIn/phone), and what to say.>",
-    "confidence": "<HIGH if based on named sources and dates, MEDIUM if inferred from patterns, LOW if speculative>"
+    "suggested_action": "<Specific next step. Include: who to contact (IT Architect, Integration Lead, CTO, Head of Integration), what channel (email/LinkedIn/phone), and what to say.>",
+    "confidence": "<HIGH if based on named sources and dates, MEDIUM if inferred from patterns, LOW if speculative>",
+    "source_url": "<URL of the most relevant source for this signal, e.g. a news article, blog post, LinkedIn profile, or job posting. If no URL available, use empty string.>"
   }}
 ]
 
 RULES:
 - Every signal MUST have a specific name, date, or number. No vague statements.
+- The "date_mentioned" MUST be a real date you found in your sources. If the source does not contain a date, leave it as empty string. NEVER fabricate a date.
 - The "opening_line" must sound like a human, not a salesperson. No jargon.
 - The "window" must explain WHY timing matters and WHEN it closes.
 - If a signal is a RISK (layoffs, reorg, competitor adoption), mark it clearly.
-- Confidence HIGH = you found a named source. MEDIUM = pattern inference. LOW = speculation.
-- Return an empty array [] if nothing concrete was found. Never invent signals."""
+- Confidence HIGH = you found a named source with a date. MEDIUM = pattern inference. LOW = speculative.
+- Return an empty array [] if nothing concrete was found. Never invent signals.
+- Prefer returning FEWER high-quality signals over many vague ones. One real signal with a source beats three generic ones."""
 
 
 async def _run_company_query(
@@ -305,9 +282,10 @@ async def _run_company_query(
         "product_category": seller_context.get("product_category", product),
         "keywords": seller_context.get("keywords", ""),
         "competitors": seller_context.get("competitors", ""),
-        "buyer_personas": seller_context.get("buyer_personas", "decision-makers"),
+        "buyer_personas": seller_context.get("buyer_personas", "IT Architects, Integration Leads, CTOs"),
         "use_cases": seller_context.get("use_cases", ""),
         "buying_triggers": seller_context.get("buying_triggers", ""),
+        "partners": seller_context.get("partners", "Accenture, Deloitte, Capgemini"),
     }
 
     prompt = query_type["prompt"].format(**ctx)
@@ -318,16 +296,27 @@ async def _run_company_query(
         all_tags=ALL_TAGS,
     )
 
-    data = await _pplx_query(
-        system=f"""You are a B2B sales intelligence analyst helping a mid-level salesperson.
-The salesperson sells: {product} ({ctx['product_category']})
-Their product solves: {ctx['use_cases']}
-Their buyers are mid-level technical leaders: {ctx['buyer_personas']}
-NOTE: The salesperson does NOT talk to the CEO/CTO/Board. They sell to Directors, VPs, Architects, and Engineering Managers.
+    from datetime import date, timedelta
+    today = date.today()
+    cutoff = today - timedelta(days=cfg["digest"]["news_recency_days"])
 
-Extract concrete, specific facts. Include names, titles, dates, and numbers.
-Focus on technology, architecture, IT operations, and integration signals.
-Do not speculate or invent information. If you can't find anything, say so.
+    data = await _pplx_query(
+        system=f"""You are a sales intelligence analyst helping a Solace colleague stay informed about their customer accounts.
+Today's date is {today.isoformat()}.
+Solace sells: PubSub+ Event Broker, Event Portal, and Agent Mesh for event-driven architecture and real-time integration.
+Key use cases: {ctx['use_cases']}
+Key buyer personas at customer accounts: {ctx['buyer_personas']}
+Competitors: {ctx['competitors']}
+Key partners: Accenture, Deloitte, Capgemini, Boomi, SAP, Informatica
+
+CRITICAL RULES:
+- Only report events, announcements, or changes from AFTER {cutoff.isoformat()}.
+- Every fact must include the SPECIFIC DATE it happened (YYYY-MM-DD format).
+- If you cannot find the exact date of an event, say so explicitly — do NOT guess.
+- Do NOT report general company background as if it were news.
+- Do NOT fabricate dates. An undated fact is better than a fake-dated one.
+- If you find nothing recent, return an empty array []. That is the correct answer.
+Focus on event-driven architecture, integration, messaging, middleware, and real-time data signals.
 Return only valid JSON.""",
 
         prompt=f"""{prompt}
@@ -406,24 +395,24 @@ async def _rank_signals(
     )
 
     data = await _pplx_query(
-        system="You are a B2B sales prioritization expert. Return only valid JSON.",
-        prompt=f"""You are ranking sales intelligence signals by urgency and impact.
-
-Given these signals for a salesperson who sells {product}:
-Their buyers are: {buyer_personas}
+        system="You are a B2B sales prioritization expert for Solace (event-driven messaging). Return only valid JSON.",
+        prompt=f"""You are ranking sales intelligence signals for a Solace colleague.
+Solace sells: PubSub+ Event Broker, Event Portal, and Agent Mesh.
+Their key stakeholders at customers are: {buyer_personas}
 
 {signals_json}
 
 Rank them from most to least urgent/impactful. The ranking criteria:
-1. RISK signals (protecting existing revenue) always rank above opportunities
-2. IMMEDIATE urgency ranks above THIS_WEEK, etc.
-3. Signals with HIGH confidence rank above MEDIUM and LOW
-4. Signals that affect the PRIMARY buyer persona rank above secondary
-5. Signals where the "window" is closing soonest rank highest
+1. RISK signals (protecting existing accounts, competitive threats from Confluent/Kafka/TIBCO/IBM MQ) always rank above opportunities
+2. Champion/stakeholder changes (new IT Architect, Integration Lead departure) rank very high
+3. IMMEDIATE urgency ranks above THIS_WEEK, etc.
+4. Signals with HIGH confidence rank above MEDIUM and LOW
+5. Partner activity (Accenture, Deloitte) at the account is highly relevant
+6. Signals where the "window" is closing soonest rank highest
 
-Return a JSON array of the indices (the "i" field) of the top 5 signals, in priority order:
+Return a JSON array of the indices (the "i" field) of the top {cfg['digest']['signals_per_email']} signals, in priority order:
 [0, 3, 7, ...]""",
-        max_tokens=200,
+        max_tokens=cfg["perplexity"]["ranking_max_tokens"],
     )
 
     content = data["choices"][0]["message"]["content"]
@@ -438,11 +427,229 @@ Return a JSON array of the indices (the "i" field) of the top 5 signals, in prio
                     if key not in seen:
                         seen.add(key)
                         ranked.append(items[idx])
-            return ranked[:5] if ranked else items[:5]
+            n = cfg["digest"]["signals_per_email"]
+            return ranked[:n] if ranked else items[:n]
     except (json.JSONDecodeError, ValueError):
         pass
 
-    return items[:5]
+    return items[:cfg["digest"]["signals_per_email"]]
+
+
+# ── Pass 4: Freshness & dedup review ─────────
+#
+# Three layers of quality control:
+#   Layer 1 (programmatic): hard date filter — drop signals with dates older than the window
+#   Layer 2 (programmatic): headline dedup — drop signals whose headline is >80% similar to a previous one
+#   Layer 3 (LLM): semantic review — a cheap model reviews remaining signals for
+#                  vague/undated content and semantic duplicates the string match missed
+
+
+def _date_filter(items: list[dict], max_age_days: int) -> tuple[list[dict], int]:
+    """Drop signals whose date_mentioned is outside the freshness window.
+
+    Signals with no date_mentioned are kept (handled by LLM review later).
+    Background-type signals are dropped outright unless they're risk signals.
+    """
+    from datetime import date, timedelta
+
+    cutoff = date.today() - timedelta(days=max_age_days)
+    kept = []
+    dropped = 0
+
+    for item in items:
+        # Background info without a date is almost always stale filler
+        if item.get("signal_type") == "background" and item.get("risk_or_opportunity") != "risk":
+            dropped += 1
+            continue
+
+        date_str = item.get("date_mentioned", "")
+        if date_str:
+            try:
+                event_date = date.fromisoformat(date_str)
+                if event_date < cutoff:
+                    dropped += 1
+                    continue
+            except ValueError:
+                pass  # unparseable date — let LLM review decide
+
+        kept.append(item)
+
+    return kept, dropped
+
+
+def _headline_dedup(items: list[dict], previous_headlines: list[str]) -> tuple[list[dict], int]:
+    """Drop signals whose headline is very similar to a previously sent headline.
+
+    Uses simple token overlap (Jaccard similarity) — fast and deterministic.
+    """
+    if not previous_headlines:
+        return items, 0
+
+    def _tokens(text: str) -> set[str]:
+        return set(text.lower().split())
+
+    prev_token_sets = [_tokens(h) for h in previous_headlines]
+
+    kept = []
+    dropped = 0
+    for item in items:
+        headline_tokens = _tokens(item.get("headline", ""))
+        if not headline_tokens:
+            kept.append(item)
+            continue
+
+        is_dup = False
+        for prev_tokens in prev_token_sets:
+            if not prev_tokens:
+                continue
+            intersection = headline_tokens & prev_tokens
+            union = headline_tokens | prev_tokens
+            similarity = len(intersection) / len(union) if union else 0
+            if similarity > 0.5:  # 50% token overlap = likely same event
+                is_dup = True
+                break
+
+        if is_dup:
+            dropped += 1
+        else:
+            kept.append(item)
+
+    return kept, dropped
+
+
+async def _llm_quality_review(
+    items: list[dict],
+    previous_headlines: list[str],
+) -> list[dict]:
+    """Final LLM review pass — catches what programmatic filters miss.
+
+    The cheap LLM sees each signal's headline, date, signal_type, sources,
+    and the previous headlines list. It drops:
+    - Signals that read like background/Wikipedia info (no recent event)
+    - Signals with vague timing ("recently", "in recent months", "has been")
+    - Semantic duplicates of previous headlines the string match missed
+    - Signals that are clearly speculative or lack a verifiable source
+    """
+    if not items:
+        return items
+
+    llm_cfg = cfg["litellm"]
+    api_url = os.getenv("LITELLM_URL", "")
+    api_key = os.getenv("LITELLM_KEY", "")
+
+    if not api_url or not api_key:
+        print("    [llm-review] LITELLM not configured, skipping")
+        return items
+
+    signals_for_review = []
+    for i, item in enumerate(items):
+        signals_for_review.append({
+            "i": i,
+            "company": item.get("company", ""),
+            "headline": item.get("headline", ""),
+            "date_mentioned": item.get("date_mentioned", ""),
+            "signal_type": item.get("signal_type", ""),
+            "tag": item.get("tag", ""),
+            "risk_or_opportunity": item.get("risk_or_opportunity", "opportunity"),
+            "confidence": item.get("confidence", ""),
+            "source_url": item.get("source_url", ""),
+        })
+
+    prev_section = ""
+    if previous_headlines:
+        prev_list = "\n".join(f"- {h}" for h in previous_headlines[:50])
+        prev_section = f"""
+PREVIOUSLY SENT HEADLINES (do NOT repeat these, even if reworded):
+{prev_list}
+"""
+
+    today_str = __import__("datetime").date.today().isoformat()
+
+    prompt = f"""Today is {today_str}. You are a strict quality gate for a weekly account intelligence email sent to salespeople.
+Every signal that passes your review will land in someone's inbox. Bad signals destroy trust.
+
+Review each signal and decide: KEEP or DROP.
+
+DROP a signal if ANY of these are true:
+- It has no date_mentioned AND reads like general background info ("Company X is a leader in...", "They use Kafka for...")
+- The date_mentioned is empty and the headline uses vague time words: "recently", "in recent months", "has been", "continues to", "ongoing"
+- The headline describes a well-known, long-standing fact rather than a recent event
+- It is substantially the same event/topic as a previously sent headline (same person, same project, same announcement — even if the wording changed)
+- The headline is generic enough to apply to almost any large enterprise ("investing in digital transformation", "modernizing IT infrastructure")
+- It has confidence LOW and no source_url
+
+KEEP a signal if:
+- It describes a specific event with a verifiable date in the last 14 days
+- It names a specific person, project, partner, or technology decision
+- It is a risk signal (layoffs, competitive threat, key departure) even if the date is approximate
+- It would make a salesperson say "I need to call my contact about this"
+{prev_section}
+SIGNALS:
+{json.dumps(signals_for_review, indent=2)}
+
+Return ONLY a JSON array of the "i" values to KEEP, in order. Example: [0, 2, 5]
+If none pass, return []. No explanation, no markdown, just the array."""
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"{api_url.rstrip('/')}/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": llm_cfg["model"],
+                    "messages": [
+                        {"role": "system", "content": "You are a strict quality gate. Return only valid JSON arrays. When in doubt, DROP."},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "max_tokens": llm_cfg["max_tokens"],
+                    "temperature": llm_cfg["temperature"],
+                },
+            )
+            resp.raise_for_status()
+
+        content = resp.json()["choices"][0]["message"]["content"]
+        indices = _parse_json(content)
+
+        if isinstance(indices, list):
+            kept = [items[idx] for idx in indices if isinstance(idx, int) and 0 <= idx < len(items)]
+            dropped = len(items) - len(kept)
+            if dropped:
+                print(f"    [llm-review] Dropped {dropped} signal(s)")
+            return kept
+
+    except Exception as e:
+        print(f"    [llm-review] Failed ({e}), keeping all signals")
+
+    return items
+
+
+async def _review_freshness_and_dedup(
+    items: list[dict],
+    previous_headlines: list[str],
+) -> list[dict]:
+    """Three-layer quality gate: date filter → headline dedup → LLM review."""
+    if not items:
+        return items
+
+    max_age = cfg["digest"]["news_recency_days"]
+
+    # Layer 1: programmatic date filter
+    items, dropped_date = _date_filter(items, max_age)
+    if dropped_date:
+        print(f"    [date-filter] Dropped {dropped_date} signal(s) older than {max_age} days or background")
+
+    # Layer 2: programmatic headline dedup
+    items, dropped_dedup = _headline_dedup(items, previous_headlines)
+    if dropped_dedup:
+        print(f"    [dedup] Dropped {dropped_dedup} signal(s) matching previous headlines")
+
+    # Layer 3: LLM semantic review
+    items = await _llm_quality_review(items, previous_headlines)
+
+    return items
 
 
 # ── Public API ───────────────────────────────
@@ -450,23 +657,19 @@ Return a JSON array of the indices (the "i" field) of the top 5 signals, in prio
 async def generate_digest_preview(
     companies: list[str],
     product: str,
+    previous_headlines: list[str] | None = None,
 ) -> list[dict]:
-    """Generate digest items with deep multi-query research."""
-    # Pass 1: understand the seller
-    print("  [seller research]")
-    seller_context = await research_seller(product)
-    print(f"    Summary: {seller_context.get('company_summary', '')[:120]}")
-    print(f"    Category: {seller_context.get('product_category', '')}")
-    print(f"    Buyers: {seller_context.get('buyer_personas', '')[:120]}")
-    print(f"    Triggers: {seller_context.get('buying_triggers', '')[:120]}")
-    print(f"    Deal killers: {seller_context.get('deal_killers', '')[:120]}")
-    print(f"    Urgency: {seller_context.get('urgency_drivers', '')[:120]}")
-    print(f"    Competitors: {seller_context.get('competitors', '')[:120]}")
+    """Generate digest items with multi-query research for Solace colleagues."""
+    # Pass 1: use hardcoded Solace context (no API call needed)
+    print("  [solace context] Using hardcoded Solace seller context")
+    seller_context = get_solace_context()
 
-    # Pass 2: 8 queries per company in parallel
+    # Pass 2: 6 queries per company in parallel
     all_items = []
-    for company in companies:
-        print(f"  [{company}] (8 queries)")
+    for i, company in enumerate(companies):
+        if i > 0:
+            await asyncio.sleep(cfg["digest"]["pace_between_companies_sec"])
+        print(f"  [{company}] (6 queries)")
         company_items = await _research_company(company, product, seller_context)
         for item in company_items:
             tag_key = item.get("tag", "strategic")
@@ -483,15 +686,35 @@ async def generate_digest_preview(
 
     # Pass 3: rank and deduplicate
     ranked = await _rank_signals(all_items, product, seller_context)
-    print(f"  [done] {len(ranked)} final signals")
+    print(f"  [ranked] {len(ranked)} signals after ranking")
 
-    return ranked
+    # Pass 4: freshness & dedup review via cheap LLM
+    print(f"  [review] Checking freshness & dedup ({len(previous_headlines or [])} previous headlines)")
+    reviewed = await _review_freshness_and_dedup(ranked, previous_headlines or [])
+    print(f"  [done] {len(reviewed)} final signals")
+
+    return reviewed
 
 
 async def generate_digest_for_user(user: dict) -> list[dict]:
-    """Generate a full digest for a single user."""
+    """Generate a full digest for a single Solace colleague."""
     companies = [c["name"] for c in user.get("companies", [])]
     if not companies:
         return []
-    product = user.get("product", "our product")
-    return await generate_digest_preview(companies, product)
+
+    # Fetch previous headlines for dedup
+    previous_headlines: list[str] = []
+    user_id = user.get("id", "")
+    if user_id:
+        try:
+            from db import get_previous_headlines
+            lookback = cfg["litellm"]["dedup_lookback_weeks"]
+            previous_headlines = await get_previous_headlines(user_id, weeks=lookback)
+            if previous_headlines:
+                print(f"  [dedup] Found {len(previous_headlines)} previous headlines to compare against")
+        except Exception as e:
+            print(f"  [dedup] Could not fetch previous headlines: {e}")
+
+    # Always use Solace product context from config
+    product = cfg["solace"]["product"]
+    return await generate_digest_preview(companies, product, previous_headlines)

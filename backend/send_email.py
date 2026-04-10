@@ -23,6 +23,8 @@ from datetime import date, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from config import cfg
+
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 GMAIL_DISPLAY_NAME = os.getenv("GMAIL_DISPLAY_NAME", "Scoop 🐶🗞️")
@@ -48,7 +50,7 @@ async def send_digest_email(user: dict, items: list[dict]) -> None:
         return
 
     html = render_digest(user, items)
-    subject = f"🐶🗞️ {len(items)} signals this week"
+    subject = cfg["email"]["subject_template"].format(count=len(items))
 
     # Run SMTP in a thread so we don't block the event loop
     loop = asyncio.get_event_loop()
@@ -62,30 +64,75 @@ async def send_welcome_email(email: str) -> None:
         return
 
     name = email.split("@")[0].title()
+    br = cfg["email"]["branding"]
+    em = cfg["email"]
     html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
 <body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
 <tr><td align="center" style="padding:32px 16px;">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:12px; overflow:hidden;">
+  <tr><td style="padding:16px 24px; background:{br['header_bg']};">
+    <img src="{br['header_logo']}" alt="Solace" style="height:22px; display:inline-block; vertical-align:middle; filter:brightness(0) invert(1);"><span style="font-size:12px; font-weight:700; color:{br['badge_color']}; letter-spacing:0.08em; vertical-align:middle; margin-left:8px;">{br['badge_text']}</span>
+  </td></tr>
   <tr><td style="padding:32px;">
-    <p style="margin:0 0 16px; font-size:24px;">🐶🗞️</p>
     <p style="margin:0 0 16px; font-size:16px; font-weight:700; color:#0f172a;">Welcome to Scoop, {name}!</p>
     <p style="margin:0 0 16px; font-size:15px; line-height:1.6; color:#475569;">
-      Your first digest arrives <strong>Monday at 7am</strong>. We'll cover all the accounts you listed
-      and tell you exactly why each signal matters for your deals.
+      Your first digest arrives <strong>{em['first_digest_time']}</strong>. We'll cover all the accounts you listed
+      with champion updates, EDA signals, partner activity, and competitive intel.
     </p>
     <p style="margin:0; font-size:15px; line-height:1.6; color:#475569;">
       That's it. No login, no dashboard. Just open your email on Monday morning.
     </p>
   </td></tr>
-  <tr><td style="padding:16px 32px; background:#f8fafc; border-top:1px solid #f1f5f9;">
-    <p style="margin:0; font-size:13px; color:#94a3b8; text-align:center;">Reply "stop" to unsubscribe anytime.</p>
+  <tr><td style="padding:14px 24px; background:{br['header_bg']}; text-align:center;">
+    <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.5);">{em['footer_text']}</p>
   </td></tr>
 </table>
 </td></tr></table>
 </body></html>"""
 
-    subject = "🐶🗞️ Welcome to Scoop!"
+    subject = em["welcome_subject"]
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, send_raw_email, email, subject, html)
+
+
+async def send_magic_link_email(email: str, link: str) -> None:
+    """Send a magic link email for account access."""
+    if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
+        print(f"  [dry-run] Would send magic link to {email}: {link}")
+        return
+
+    name = email.split("@")[0].replace(".", " ").title()
+    br = cfg["email"]["branding"]
+    em = cfg["email"]
+    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:12px; overflow:hidden;">
+  <tr><td style="padding:16px 24px; background:{br['header_bg']};">
+    <img src="{br['header_logo']}" alt="Solace" style="height:22px; display:inline-block; vertical-align:middle; filter:brightness(0) invert(1);"><span style="font-size:12px; font-weight:700; color:{br['badge_color']}; letter-spacing:0.08em; vertical-align:middle; margin-left:8px;">{br['badge_text']}</span>
+  </td></tr>
+  <tr><td style="padding:32px;">
+    <p style="margin:0 0 16px; font-size:16px; font-weight:700; color:#0f172a;">Hi {name},</p>
+    <p style="margin:0 0 24px; font-size:15px; line-height:1.6; color:#475569;">
+      Click below to manage your Scoop account — edit your tracked companies, focus area, and preferences.
+    </p>
+    <p style="margin:0 0 24px; text-align:center;">
+      <a href="{link}" style="display:inline-block; padding:14px 32px; background:linear-gradient(101deg, #ABFF88 1%, #00C895 105%); color:#03213B; font-weight:700; font-size:15px; text-decoration:none; border-radius:100px;">Open My Account</a>
+    </p>
+    <p style="margin:0; font-size:13px; color:#94a3b8;">
+      This link expires in 15 minutes. If you didn't request this, just ignore it.
+    </p>
+  </td></tr>
+  <tr><td style="padding:14px 24px; background:{br['header_bg']}; text-align:center;">
+    <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.5);">{em['footer_text']}</p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>"""
+
+    subject = f"{br['badge_text']} — Sign in to your account"
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, send_raw_email, email, subject, html)
 
@@ -126,34 +173,62 @@ def render_digest(user: dict, items: list[dict]) -> str:
         if item.get("opening_line"):
             opener_html = f'<p style="margin:6px 0 0; font-size:12px; color:#64748b;">💬 <em>"{item["opening_line"]}"</em></p>'
 
+        # Source link
+        source_html = ""
+        source_url = item.get("source_url", "")
+        if not source_url:
+            sources = item.get("sources", [])
+            if sources:
+                source_url = sources[0] if isinstance(sources[0], str) else ""
+        if source_url:
+            source_domain = source_url.split("//")[-1].split("/")[0].replace("www.", "")
+            source_html = f'<p style="margin:6px 0 0; font-size:11px;"><a href="{source_url}" style="color:#6366f1; text-decoration:none;">🔗 {source_domain}</a></p>'
+
+        # Date badge
+        date_badge = ""
+        date_mentioned = item.get("date_mentioned", "")
+        if date_mentioned:
+            try:
+                from datetime import date as _date
+                d = _date.fromisoformat(date_mentioned)
+                date_badge = f' <span style="font-size:10px; color:#94a3b8; margin-left:4px;">{d.strftime("%b %d")}</span>'
+            except ValueError:
+                pass
+
         items_html += f"""
         <tr><td style="padding:16px 24px; border-bottom:1px solid #f1f5f9;">
-          <p style="margin:0 0 4px; font-size:11px;"><span style="display:inline; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors['bg']}; color:{colors['fg']}; text-transform:uppercase; letter-spacing:0.04em;">{item['tag']}</span>{risk_badge}</p>
+          <p style="margin:0 0 4px; font-size:11px;"><span style="display:inline; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors['bg']}; color:{colors['fg']}; text-transform:uppercase; letter-spacing:0.04em;">{item['tag']}</span>{risk_badge}{date_badge}</p>
           <p style="margin:0 0 6px; font-size:14px; font-weight:700; color:#0f172a;">{item['company']}</p>
           <p style="margin:0 0 8px; font-size:13px; line-height:1.5; color:#475569;">{item['headline']}</p>
           <p style="margin:0; font-size:12px; line-height:1.5; color:#0f172a; background:#eef2ff; padding:8px 12px; border-radius:4px; border-left:3px solid #6366f1;">{why_text}</p>
           {action_html}
           {opener_html}
+          {source_html}
         </td></tr>"""
 
     company_count = len(user.get("companies", []))
     user_name = user["email"].split("@")[0].title()
+    br = cfg["email"]["branding"]
+    footer = cfg["email"]["footer_text"]
 
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
 <tr><td align="center" style="padding:24px 12px;">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:10px; overflow:hidden;">
-  <tr><td style="padding:16px 24px; border-bottom:1px solid #f1f5f9; background:#f8fafc;">
-    <span style="font-size:14px; font-weight:700; color:#0f172a;">🐶🗞️ Your Scoop</span>
-    <span style="font-size:12px; color:#94a3b8; float:right;">{today.strftime('%b %d, %Y')}</span>
+  <!-- Branded header -->
+  <tr><td style="padding:16px 24px; background:{br['header_bg']}; border-bottom:none;">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td><img src="{br['header_logo']}" alt="Solace" style="height:22px; display:inline-block; vertical-align:middle; filter:brightness(0) invert(1);"><span style="font-size:12px; font-weight:700; color:{br['badge_color']}; letter-spacing:0.08em; vertical-align:middle; margin-left:8px;">{br['badge_text']}</span></td>
+      <td style="text-align:right;"><span style="font-size:12px; color:rgba(255,255,255,0.6);">{today.strftime('%b %d, %Y')}</span></td>
+    </tr></table>
   </td></tr>
   <tr><td style="padding:16px 24px 8px;">
-    <p style="margin:0; font-size:13px; color:#475569;">Hi {user_name}, {len(items)} signals this week. Reply to ask follow-up questions.</p>
+    <p style="margin:0; font-size:13px; color:#475569;">Hi {user_name}, {len(items)} signal{'s' if len(items) != 1 else ''} this week across your accounts.</p>
   </td></tr>
   {items_html}
-  <tr><td style="padding:12px 24px; background:#f8fafc; border-top:1px solid #f1f5f9; text-align:center;">
-    <p style="margin:0; font-size:11px; color:#94a3b8;">Tracking {company_count} accounts · Next: {next_monday.strftime('%b %d')} · Reply "stop" to unsubscribe</p>
+  <tr><td style="padding:14px 24px; background:{br['header_bg']}; text-align:center;">
+    <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.5);">Tracking {company_count} account{'s' if company_count != 1 else ''} · Next digest: {next_monday.strftime('%b %d')} · {footer}</p>
   </td></tr>
 </table>
 </td></tr></table>
