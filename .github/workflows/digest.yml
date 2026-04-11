@@ -2,10 +2,21 @@ name: Weekly Digest
 
 on:
   schedule:
-    # Every Sunday at 11pm UTC
-    - cron: '0 23 * * 0'
+    # Sunday 6pm UTC (8pm CEST) - research
+    - cron: '0 18 * * 0'
+    # Monday 6am UTC (8am CEST) - send
+    - cron: '0 6 * * 1'
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'Mode: both, research-only, or send-only'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - research-only
+          - send-only
       user_email:
         description: 'Process a specific user (leave blank for all)'
         required: false
@@ -37,11 +48,38 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SAP_AICORE_AUTH_URL: ${{ secrets.SAP_AICORE_AUTH_URL }}
+          SAP_AICORE_CLIENT_ID: ${{ secrets.SAP_AICORE_CLIENT_ID }}
+          SAP_AICORE_CLIENT_SECRET: ${{ secrets.SAP_AICORE_CLIENT_SECRET }}
+          SAP_AICORE_BASE_URL: ${{ secrets.SAP_AICORE_BASE_URL }}
+          SAP_AICORE_RESOURCE_GROUP: ${{ secrets.SAP_AICORE_RESOURCE_GROUP }}
+          AICORE_DEPLOYMENT_PPLX: ${{ secrets.AICORE_DEPLOYMENT_PPLX }}
+          AICORE_DEPLOYMENT_GPT4O_MINI: ${{ secrets.AICORE_DEPLOYMENT_GPT4O_MINI }}
           LITELLM_URL: ${{ secrets.LITELLM_URL }}
           LITELLM_KEY: ${{ secrets.LITELLM_KEY }}
+          ALLOWED_RECIPIENTS: ${{ secrets.ALLOWED_RECIPIENTS }}
         run: |
-          if [ -n "${{ inputs.user_email }}" ]; then
-            python run_digest.py --email "${{ inputs.user_email }}"
-          else
-            python run_digest.py
+          MODE="${{ inputs.mode }}"
+          EMAIL="${{ inputs.user_email }}"
+          ARGS=""
+
+          # Auto-detect mode from schedule if not manually set
+          if [ -z "$MODE" ] || [ "$MODE" = "both" ]; then
+            DAY=$(date -u +%u)
+            if [ "$DAY" = "7" ]; then
+              ARGS="--research-only"
+            elif [ "$DAY" = "1" ]; then
+              ARGS="--send-only"
+            fi
+          elif [ "$MODE" = "research-only" ]; then
+            ARGS="--research-only"
+          elif [ "$MODE" = "send-only" ]; then
+            ARGS="--send-only"
           fi
+
+          if [ -n "$EMAIL" ]; then
+            ARGS="$ARGS --email $EMAIL"
+          fi
+
+          python run_digest.py $ARGS

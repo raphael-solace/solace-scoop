@@ -382,42 +382,27 @@
     setupForm.querySelectorAll('.setup-form__error').forEach(function (el) { el.remove(); });
   }
 
-  // ── Supabase subscribe ─────────────────
-  function supabaseHeaders() {
-    return {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
-    };
-  }
-
+  // ── Supabase subscribe (via RPC function) ──
   function subscribeToSupabase(email, product, companies) {
-    var upsertHeaders = supabaseHeaders();
-    upsertHeaders['Prefer'] = 'return=representation,resolution=merge-duplicates';
-    return fetch(SUPABASE_URL + '/rest/v1/users?on_conflict=email', {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      console.warn('Supabase not configured, skipping subscribe');
+      return Promise.resolve();
+    }
+    return fetch(SUPABASE_URL + '/rest/v1/rpc/signup', {
       method: 'POST',
-      headers: upsertHeaders,
-      body: JSON.stringify({ email: email, product: product })
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        p_email: email,
+        p_product: product,
+        p_companies: companies
+      })
     })
     .then(function (r) {
-      if (!r.ok) return r.text().then(function (t) { throw new Error('User upsert failed: ' + t); });
-      return r.json();
-    })
-    .then(function (rows) {
-      var user = rows[0];
-      if (!companies.length) return;
-      var companyRows = companies.map(function (name) {
-        return { user_id: user.id, name: name };
-      });
-      return fetch(SUPABASE_URL + '/rest/v1/companies', {
-        method: 'POST',
-        headers: supabaseHeaders(),
-        body: JSON.stringify(companyRows)
-      })
-      .then(function (r) {
-        if (!r.ok) return r.text().then(function (t) { throw new Error('Companies insert failed: ' + t); });
-      });
+      if (!r.ok) return r.text().then(function (t) { console.error('Signup failed:', t); });
     });
   }
 

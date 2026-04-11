@@ -1,6 +1,18 @@
-# Environment
+# Environment and secrets
 .env
 .env.local
+.env.production
+
+# Frontend config with keys
+docs/js/config.js
+
+# Handoff and internal docs
+handof.md
+handoff.md
+HANDOFF.md
+ai-core.md
+brief.md
+outreach/
 
 # Python
 __pycache__/
@@ -12,7 +24,7 @@ build/
 venv/
 .venv/
 
-# Node (future)
+# Node
 node_modules/
 .next/
 
@@ -22,14 +34,12 @@ node_modules/
 *.swp
 *.swo
 .DS_Store
+.claude/
 
-# Runtime state
+# Runtime
 .reply_threads.json
-
-# Logs
 *.log
+
+# Screenshots and artifacts
 .playwright-mcp/
 *.png
-
-# Frontend config with keys (use config.example.js as template)
-docs/js/config.js

@@ -5,9 +5,9 @@
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
-  product text not null,              -- what they sell
-  plan text not null default 'free',  -- free | pro | team
-  stripe_customer_id text,            -- set after Stripe checkout
+  product text not null,
+  plan text not null default 'free',
+  stripe_customer_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -29,7 +29,7 @@ create table if not exists digests (
   items jsonb not null default '[]'
 );
 
--- Magic link tokens (for passwordless auth)
+-- Auth tokens (for future passwordless login)
 create table if not exists auth_tokens (
   id uuid primary key default gen_random_uuid(),
   email text not null,
@@ -39,7 +39,7 @@ create table if not exists auth_tokens (
   created_at timestamptz not null default now()
 );
 
--- Reply thread tracking (for email back-and-forth limits)
+-- Reply thread tracking
 create table if not exists reply_threads (
   thread_id text primary key,
   user_email text not null,
@@ -52,11 +52,18 @@ create table if not exists reply_threads (
 -- Indexes
 create index if not exists idx_companies_user on companies(user_id);
 create index if not exists idx_digests_user on digests(user_id);
+create index if not exists idx_digests_sent on digests(sent_at desc);
 create index if not exists idx_auth_tokens_token on auth_tokens(token);
 create index if not exists idx_auth_tokens_email on auth_tokens(email);
 create index if not exists idx_users_email on users(email);
 
--- Row-level security (enable after setting up auth)
--- alter table users enable row level security;
--- alter table companies enable row level security;
--- alter table digests enable row level security;
+-- Row-level security
+alter table users enable row level security;
+alter table companies enable row level security;
+alter table digests enable row level security;
+alter table auth_tokens enable row level security;
+alter table reply_threads enable row level security;
+
+-- RLS policies: service role key bypasses all policies.
+-- Anon key has NO direct access to any table.
+-- Signup goes through the RPC function (see schema_signup_rls.sql).

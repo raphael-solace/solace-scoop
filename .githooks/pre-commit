@@ -1,0 +1,27 @@
+#!/bin/sh
+# Pre-commit hook: block commits containing secret patterns.
+# Install: git config core.hooksPath .githooks
+
+RED='\033[0;31m'
+NC='\033[0m'
+
+PATTERNS="pplx-|sk-|sb_secret_|gulq fxwi|whsec_|GMAIL_APP_PASSWORD=[a-z]"
+
+# Only check staged files
+FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if [ -z "$FILES" ]; then
+  exit 0
+fi
+
+FOUND=$(echo "$FILES" | xargs grep -lE "$PATTERNS" 2>/dev/null | grep -v ".env.example" | grep -v ".githooks/pre-commit")
+
+if [ -n "$FOUND" ]; then
+  echo "${RED}BLOCKED: Secret pattern detected in staged files:${NC}"
+  echo "$FOUND"
+  echo ""
+  echo "Remove the secret before committing."
+  exit 1
+fi
+
+exit 0

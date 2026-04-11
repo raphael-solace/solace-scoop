@@ -1,10 +1,8 @@
 """
-Scoop - Database layer (Supabase)
+Scoop -- Database layer (Supabase REST API)
 
-Simple async wrapper around the Supabase REST API.
-Uses httpx directly to keep dependencies minimal.
-Swap to the official supabase-py client when you need
-realtime or auth helpers.
+Uses httpx directly against the PostgREST API.
+Service role key for backend operations (bypasses RLS).
 """
 
 from __future__ import annotations
@@ -32,10 +30,9 @@ def _url(table: str) -> str:
     return f"{SUPABASE_URL}/rest/v1/{table}"
 
 
-# ── Users ─────────────────────────────────────
+# -- Users ------------------------------------
 
 async def get_all_users() -> list[dict]:
-    """Fetch all users with their companies."""
     async with httpx.AsyncClient() as client:
         resp = await client.get(
             _url("users"),
@@ -62,9 +59,7 @@ async def get_user_by_email(email: str) -> Optional[dict]:
 
 
 async def create_user(email: str, product: str, companies: list[str]) -> dict:
-    """Create a user and their tracked companies in one go."""
     async with httpx.AsyncClient() as client:
-        # Create user
         resp = await client.post(
             _url("users"),
             headers=_headers(),
@@ -73,7 +68,6 @@ async def create_user(email: str, product: str, companies: list[str]) -> dict:
         resp.raise_for_status()
         user = resp.json()[0]
 
-        # Create companies
         if companies:
             rows = [{"user_id": user["id"], "name": c} for c in companies]
             resp = await client.post(
@@ -86,10 +80,9 @@ async def create_user(email: str, product: str, companies: list[str]) -> dict:
         return user
 
 
-# ── Digests ───────────────────────────────────
+# -- Digests ----------------------------------
 
 async def save_digest(user_id: str, items: list[dict]) -> None:
-    """Save a sent digest for history/dedup."""
     async with httpx.AsyncClient() as client:
         await client.post(
             _url("digests"),
@@ -102,8 +95,25 @@ async def save_digest(user_id: str, items: list[dict]) -> None:
         )
 
 
+async def get_last_digest(user_id: str) -> Optional[dict]:
+    """Get the most recent saved digest for a user."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            _url("digests"),
+            headers=_headers(),
+            params={
+                "user_id": f"eq.{user_id}",
+                "select": "items,sent_at,item_count",
+                "order": "sent_at.desc",
+                "limit": "1",
+            },
+        )
+        resp.raise_for_status()
+        rows = resp.json()
+        return rows[0] if rows else None
+
+
 async def get_previous_headlines(user_id: str, weeks: int = 4) -> list[str]:
-    """Get headlines from previous digests for dedup (last N weeks)."""
     cutoff = (datetime.now(timezone.utc) - timedelta(weeks=weeks)).isoformat()
     async with httpx.AsyncClient() as client:
         resp = await client.get(
@@ -125,3 +135,14 @@ async def get_previous_headlines(user_id: str, weeks: int = 4) -> list[str]:
             if isinstance(item, dict) and item.get("headline"):
                 headlines.append(item["headline"])
     return headlines
+
+
+# -- Delete -----------------------------------
+
+async def delete_user(user_id: str) -> None:
+    """Delete a user and all their data (cascade deletes companies, digests)."""
+    async with httpx.AsyncClient() as client:
+        await client.delete(
+            _url("users") + f"?id=eq.{user_id}",
+            headers=_headers(),
+        )
