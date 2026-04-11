@@ -205,66 +205,64 @@ def get_solace_context() -> dict:
 QUERY_TYPES = [
     {
         "name": "people_moves",
-        "days": 7,
-        "prompt": """Find recent role changes, appointments, departures, or promotions at {company} in the LAST 7 DAYS ONLY.
-Focus on IT Architects, Enterprise Architects, Integration Leads, CTOs, VPs of Engineering, Heads of Platform, Directors of IT.
-Include the person's NAME, TITLE, where they came from, and the DATE of the change.
-If nothing found in the last 7 days, return an empty array.""",
-    },
-    {
-        "name": "business_initiatives",
         "days": 14,
-        "prompt": """Find IT and technology initiatives at {company} in the LAST 14 DAYS.
-Focus on: cloud migration, digital transformation, event-driven architecture adoption, middleware modernization (TIBCO, IBM MQ replacement), microservices, IoT, AI/ML data pipelines, real-time integration projects.
-Include project names, budgets, and timelines if mentioned.
+        "prompt": """Find recent executive changes, senior appointments, departures, or promotions at {company} in the LAST 14 DAYS.
+Include C-suite, VPs, Directors, Heads of departments, Chief Architects, CTO, CIO, CDO.
+Include the person's NAME, new TITLE, previous role, and DATE.
 If nothing found, return an empty array.""",
     },
     {
-        "name": "hiring_velocity",
+        "name": "business_news",
         "days": 14,
-        "prompt": """Analyze HIRING PATTERNS at {company} in the LAST 14 DAYS.
-Look for clusters of roles in IT, integration, middleware, platform, DevOps, architecture.
-Keywords to match: {keywords}
-A pattern of 5+ related postings is a signal. A single posting is noise.
-If nothing significant found, return an empty array.""",
-    },
-    {
-        "name": "partnerships_vendors",
-        "days": 14,
-        "prompt": """Find technology partnerships, vendor selections, or SI engagements at {company} in the LAST 14 DAYS.
-Look for: Accenture, Deloitte, Capgemini working with {company}. Competitor deployments (Confluent, TIBCO, IBM MQ).
-Include vendor names and engagement scope.
+        "prompt": """Find the most important business news about {company} in the LAST 14 DAYS.
+Include: strategic announcements, M&A activity, major contracts won or lost, product launches, market expansions, earnings surprises, CEO statements about strategy, organizational changes.
+Prioritize news that would be useful for a salesperson to reference in a conversation.
 If nothing found, return an empty array.""",
     },
     {
-        "name": "financial_events",
+        "name": "technology_initiatives",
         "days": 14,
-        "prompt": """Find financial events at {company} in the LAST 14 DAYS relevant to IT spend.
-Look for: funding rounds, earnings language about technology investment, budget announcements, M&A affecting IT.
+        "prompt": """Find technology and IT initiatives at {company} in the LAST 14 DAYS.
+Include: cloud migration, digital transformation, AI/ML projects, platform modernization, new technology partnerships, IT infrastructure investments, data strategy announcements, cybersecurity initiatives.
+Also look for: event-driven architecture, middleware changes, real-time data, microservices, integration projects.
+If nothing found, return an empty array.""",
+    },
+    {
+        "name": "partnerships_deals",
+        "days": 14,
+        "prompt": """Find new partnerships, vendor selections, consulting engagements, or major deals involving {company} in the LAST 14 DAYS.
+Include: technology vendor selections, SI engagements (Accenture, Deloitte, Capgemini, etc.), strategic alliances, joint ventures, supply chain partnerships.
+If nothing found, return an empty array.""",
+    },
+    {
+        "name": "financial_signals",
+        "days": 14,
+        "prompt": """Find financial news about {company} in the LAST 14 DAYS that signals IT spending direction.
+Include: quarterly results with technology commentary, capex/opex guidance, investment announcements, cost optimization programs, budget reallocations, fundraising.
 If nothing found, return an empty array.""",
     },
     {
         "name": "risk_signals",
         "days": 14,
-        "prompt": """Find NEGATIVE or WARNING signals at {company} in the LAST 14 DAYS.
-Look for: layoffs in IT/engineering, hiring freezes, budget cuts, key departures (architects, integration leads), restructuring in tech teams.
-Be specific about scope. "Laid off 50 in engineering" is different from "laid off 50 in marketing."
+        "prompt": """Find WARNING signals at {company} in the LAST 14 DAYS.
+Include: layoffs (specify which departments), restructuring, executive departures, profit warnings, regulatory fines, cybersecurity incidents, supply chain disruptions.
+Be specific about scope and impact.
 If nothing concerning, return an empty array.""",
     },
     {
-        "name": "competitive_moves",
+        "name": "competitive_intel",
         "days": 14,
-        "prompt": """Find competitive intelligence at {company} in the LAST 14 DAYS relevant to selling event-driven messaging.
-Has {company} adopted or evaluated: {competitors}?
-Job postings mentioning competitor products? Migration away from current platform?
+        "prompt": """Find competitive intelligence about {company} in the LAST 14 DAYS relevant to enterprise software and integration.
+Has {company} selected, evaluated, or expanded use of: Kafka, Confluent, TIBCO, IBM MQ, MuleSoft, AWS EventBridge, Azure Service Bus, or other messaging/integration platforms?
+Also: job postings mentioning competitor technologies, conference talks about their tech stack, migration projects.
 If nothing found, return an empty array.""",
     },
     {
-        "name": "regulatory_compliance",
+        "name": "industry_regulatory",
         "days": 14,
-        "prompt": """Find regulatory or compliance developments affecting {company} in the LAST 14 DAYS.
-Focus on regulations requiring real-time data processing, event-driven patterns, or integration modernization.
-Include deadlines and fines if mentioned.
+        "prompt": """Find industry developments or regulatory changes affecting {company} in the LAST 14 DAYS.
+Include: new regulations, compliance deadlines, industry trends affecting {company}'s sector, government policy changes, trade developments.
+Focus on developments that create urgency for technology investment.
 If nothing found, return an empty array.""",
     },
 ]
