@@ -38,6 +38,9 @@ async def main(
     else:
         users = await get_all_users()
 
+    # Filter out test accounts
+    users = [u for u in users if u.get("email", "").endswith("@solace.com")]
+
     if not users:
         print("No users to process.")
         return

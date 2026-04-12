@@ -30,14 +30,16 @@ GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 GMAIL_DISPLAY_NAME = os.getenv("GMAIL_DISPLAY_NAME", "Scoop 🐶🗞️")
 
 
-ALLOWED_RECIPIENTS = os.getenv("ALLOWED_RECIPIENTS", "").split(",")
+ALLOWED_RECIPIENTS = os.getenv("ALLOWED_RECIPIENTS", "").strip()
 
 
 def send_raw_email(to: str, subject: str, html: str) -> None:
     """Send an email via Gmail SMTP. Runs synchronously."""
-    if to.lower().strip() not in [r.lower().strip() for r in ALLOWED_RECIPIENTS]:
-        print(f"  [BLOCKED] Email to {to} blocked — not in ALLOWED_RECIPIENTS")
-        return
+    if ALLOWED_RECIPIENTS != "*":
+        allowed = [r.lower().strip() for r in ALLOWED_RECIPIENTS.split(",") if r.strip()]
+        if not allowed or to.lower().strip() not in allowed:
+            print(f"  [BLOCKED] Email to {to} blocked — not in ALLOWED_RECIPIENTS")
+            return
 
     msg = MIMEMultipart("alternative")
     msg["From"] = f"{GMAIL_DISPLAY_NAME} <{GMAIL_ADDRESS}>"

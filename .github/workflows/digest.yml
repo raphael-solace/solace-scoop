@@ -4,8 +4,8 @@ on:
   schedule:
     # Sunday 6pm UTC (8pm CEST) - research
     - cron: '0 18 * * 0'
-    # Monday 6am UTC (8am CEST) - send
-    - cron: '0 6 * * 1'
+    # Monday 5am UTC (7am CEST) - send
+    - cron: '0 5 * * 1'
   workflow_dispatch:
     inputs:
       mode:
