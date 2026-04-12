@@ -272,12 +272,12 @@ SIGNAL_OUTPUT_INSTRUCTION = """Return a JSON array of signals (0 to 3 items). No
   {{
     "company": "{company}",
     "tag": "<one of: {all_tags}>",
-    "date": "<the date this event happened, e.g. 'Apr 8'. MUST be a real date from your sources. If no date, use empty string.>",
+    "date": "<YYYY-MM-DD format. MUST be a real date from your sources. If you cannot determine the exact date, use empty string. NEVER guess a date.>",
     "headline": "<one specific sentence with names, dates, concrete details. Never use em dashes.>",
-    "why": "<one sentence connecting this to Solace (event broker, EDA, Agent Mesh)>",
+    "why": "<one sentence explaining why a salesperson covering this account should care. Focus on the business impact, not on any specific product. What does this mean for the relationship?>",
     "urgency": "<IMMEDIATE | THIS_WEEK | THIS_MONTH | THIS_QUARTER>",
     "window": "<why timing matters and when it closes>",
-    "opening_line": "<natural conversation starter, no jargon>",
+    "opening_line": "<natural conversation starter referencing this news, no jargon, no selling>",
     "risk_or_opportunity": "<opportunity | risk | both>",
     "suggested_action": "<who to contact, what channel, what to say>",
     "confidence": "<HIGH | MEDIUM | LOW>",
@@ -287,6 +287,9 @@ SIGNAL_OUTPUT_INSTRUCTION = """Return a JSON array of signals (0 to 3 items). No
 
 RULES:
 - Every signal MUST have a specific name, date, or number
+- The "date" field MUST be YYYY-MM-DD format (e.g. 2026-04-08). If unsure of exact date, leave empty.
+- The "why" should explain business relevance, NOT force a connection to any specific product
+- The "opening_line" should be something you'd naturally say to a contact, not a sales pitch
 - Return [] if nothing concrete found. Never invent signals.
 - Never use em dashes (--) in any field"""
 
@@ -334,7 +337,22 @@ If nothing recent, return []. Return only valid JSON.""",
         if not item.get("sources"):
             item["sources"] = sources
 
-    return [i for i in items if i.get("headline")]
+    # Hard date filter: drop signals with parseable dates older than cutoff
+    valid = []
+    for item in items:
+        if not item.get("headline"):
+            continue
+        d = item.get("date", "")
+        if d:
+            try:
+                signal_date = date.fromisoformat(d)
+                if signal_date < cutoff:
+                    continue  # too old
+            except ValueError:
+                pass  # unparseable date, keep it
+        valid.append(item)
+
+    return valid
 
 
 async def _research_company(
@@ -377,16 +395,19 @@ async def _rank_signals(
     )
 
     data = await _call_model(
-        system="You are a B2B sales prioritization expert. Return only valid JSON.",
-        prompt=f"""Rank these signals for a Solace colleague. Criteria:
-1. RISK signals rank above opportunities
-2. People changes (new architect, key departure) rank high
-3. IMMEDIATE urgency above THIS_WEEK, etc.
-4. HIGH confidence above MEDIUM/LOW
+        system="You are a B2B sales intelligence curator. Return only valid JSON.",
+        prompt=f"""Select the best signals for a salesperson's weekly account intelligence digest.
+
+SELECTION CRITERIA (in order of importance):
+1. DIVERSITY: include a mix of signal types. Do NOT select more than 3 risk/layoff signals. A good digest has people moves, partnerships, strategic news, AND risk signals, not just one type.
+2. ACTIONABILITY: prefer signals the salesperson can reference in a conversation or act on this week.
+3. FRESHNESS: prefer signals with specific recent dates over vague ones.
+4. COMPANY SPREAD: try to cover different companies, not 5 signals from the same company.
+5. CONFIDENCE: prefer HIGH confidence signals with named sources.
 
 {signals_json}
 
-Return a JSON array of the "i" values of the top {n}, in priority order: [0, 3, 7, ...]""",
+Return a JSON array of the "i" values of the best {n}, in priority order: [0, 3, 7, ...]""",
         max_tokens=cfg["perplexity"]["ranking_max_tokens"],
         provider="pplx",
     )
@@ -403,11 +424,31 @@ Return a JSON array of the "i" values of the top {n}, in priority order: [0, 3, 
                     if key not in seen:
                         seen.add(key)
                         ranked.append(items[idx])
-            return ranked[:n] if ranked else items[:n]
+            result = ranked[:n] if ranked else items[:n]
+            return _cap_risk_signals(result)
     except (json.JSONDecodeError, ValueError):
         pass
 
-    return items[:n]
+    return _cap_risk_signals(items[:n])
+
+
+def _cap_risk_signals(items: list[dict], max_risk: int = 3) -> list[dict]:
+    """Ensure no more than max_risk risk/layoff signals in a digest."""
+    result = []
+    risk_count = 0
+    deferred_non_risk = []
+
+    for item in items:
+        is_risk = item.get("risk_or_opportunity") in ("risk", "both")
+        if is_risk:
+            if risk_count < max_risk:
+                result.append(item)
+                risk_count += 1
+            # else skip
+        else:
+            result.append(item)
+
+    return result
 
 
 # -- Dedup against previous week ---------------
