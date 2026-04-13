@@ -120,10 +120,8 @@ def render_digest(user: dict, items: list[dict]) -> str:
     items_html = ""
     for item in items:
         colors = tag_colors.get(item.get("tag_color", "blue"), tag_colors["blue"])
-        is_risk = item.get("risk_or_opportunity", "") in ("risk", "both")
-
-        # Compact tag line: [Tag] [RISK] Company
-        risk_badge = ' <span style="font-size:10px; font-weight:700; color:#dc2626;">⚠ RISK</span>' if is_risk else ""
+        # Compact tag line: [Tag] Company
+        risk_badge = ""
 
         # Why + window merged into one short block
         why_text = item.get("why", "")
