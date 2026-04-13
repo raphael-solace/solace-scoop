@@ -120,56 +120,55 @@ def render_digest(user: dict, items: list[dict]) -> str:
     items_html = ""
     for item in items:
         colors = tag_colors.get(item.get("tag_color", "blue"), tag_colors["blue"])
-        # Compact tag line: [Tag] Company
-        risk_badge = ""
-
-        # Why + window merged into one short block
-        why_text = item.get("why", "")
-        window = item.get("window", "")
-        if window:
-            why_text += f" <em style='color:#64748b;'>({window})</em>"
-
-        # Action line
-        action_html = ""
-        if item.get("suggested_action"):
-            action_html = f'<p style="margin:6px 0 0; font-size:12px; color:#6366f1; font-weight:600;">→ {item["suggested_action"]}</p>'
-
-        # Opening line
-        opener_html = ""
-        if item.get("opening_line"):
-            opener_html = f'<p style="margin:6px 0 0; font-size:12px; color:#64748b;">💬 <em>"{item["opening_line"]}"</em></p>'
 
         # Source link
-        source_html = ""
         source_url = item.get("source_url", "")
         if not source_url:
             sources = item.get("sources", [])
             if sources:
                 source_url = sources[0] if isinstance(sources[0], str) else ""
+        source_link = ""
         if source_url:
             source_domain = source_url.split("//")[-1].split("/")[0].replace("www.", "")
-            source_html = f'<p style="margin:6px 0 0; font-size:11px;"><a href="{source_url}" style="color:#6366f1; text-decoration:none;">🔗 {source_domain}</a></p>'
+            source_link = f' <a href="{source_url}" style="color:#6366f1; text-decoration:none; font-size:12px;">{source_domain}</a>'
 
-        # Date badge
-        date_badge = ""
-        date_mentioned = item.get("date_mentioned", "")
-        if date_mentioned:
-            try:
-                from datetime import date as _date
-                d = _date.fromisoformat(date_mentioned)
-                date_badge = f' <span style="font-size:10px; color:#94a3b8; margin-left:4px;">{d.strftime("%b %d")}</span>'
-            except ValueError:
-                pass
+        # Header row: Company - Tag - Link
+        header_html = f'<span style="font-weight:700; color:#0f172a; font-size:14px;">{item["company"]}</span>'
+        header_html += f' <span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors["bg"]}; color:{colors["fg"]}; text-transform:uppercase; letter-spacing:0.04em; vertical-align:middle;">{item["tag"]}</span>'
+        if source_link:
+            header_html += f' {source_link}'
+
+        # Headline (one sentence)
+        headline_html = item.get("headline", "")
+
+        # Why paragraph
+        why_text = item.get("why", "")
+        window = item.get("window", "")
+        if window:
+            why_text += f" ({window})"
+
+        # Scoop thinks section
+        scoop_html = ""
+        action = item.get("suggested_action", "")
+        opener = item.get("opening_line", "")
+        if action or opener:
+            scoop_parts = ""
+            if action:
+                scoop_parts += f'<p style="margin:0 0 4px; font-size:12px; color:#0f172a;">→ {action}</p>'
+            if opener:
+                scoop_parts += f'<p style="margin:0; font-size:12px; color:#64748b;">💬 <em>"{opener}"</em></p>'
+            scoop_html = f"""
+            <div style="margin-top:10px; padding:10px 12px; background:#f0f0ff; border-radius:6px; border-left:3px solid #6366f1;">
+              <p style="margin:0 0 6px; font-size:10px; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:0.08em;">Scoop thinks</p>
+              {scoop_parts}
+            </div>"""
 
         items_html += f"""
         <tr><td style="padding:16px 24px; border-bottom:1px solid #f1f5f9;">
-          <p style="margin:0 0 4px; font-size:11px;"><span style="display:inline; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors['bg']}; color:{colors['fg']}; text-transform:uppercase; letter-spacing:0.04em;">{item['tag']}</span>{risk_badge}{date_badge}</p>
-          <p style="margin:0 0 6px; font-size:14px; font-weight:700; color:#0f172a;">{item['company']}</p>
-          <p style="margin:0 0 8px; font-size:13px; line-height:1.5; color:#475569;">{item['headline']}</p>
-          <p style="margin:0; font-size:12px; line-height:1.5; color:#0f172a; background:#eef2ff; padding:8px 12px; border-radius:4px; border-left:3px solid #6366f1;">{why_text}</p>
-          {action_html}
-          {opener_html}
-          {source_html}
+          <p style="margin:0 0 8px;">{header_html}</p>
+          <p style="margin:0 0 6px; font-size:13px; line-height:1.5; color:#0f172a;">{headline_html}</p>
+          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">{why_text}</p>
+          {scoop_html}
         </td></tr>"""
 
     company_count = len(user.get("companies", []))
