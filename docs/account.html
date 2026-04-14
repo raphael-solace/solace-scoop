@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <!-- Auth via backend API, data via Supabase REST -->
+  <link rel="stylesheet" href="css/account.css">
 </head>
 <body>
 
@@ -27,113 +27,111 @@
     </div>
   </nav>
 
-  <!-- Step 1: Enter email -->
-  <section class="account-section" id="email-section">
-    <div class="container">
-      <h1 class="section__title">My Account</h1>
-      <p class="section__subtitle">Enter your work email. We'll send you a 6-digit code to sign in.</p>
-      <form id="email-form" class="setup-form" style="max-width:440px" novalidate>
-        <div class="setup-form__fields">
-          <div class="setup-form__field">
-            <label class="setup-form__label" for="login-email">Your work email</label>
-            <input class="setup-form__input" type="email" id="login-email" placeholder="you@solace.com" required autocomplete="email">
-          </div>
-        </div>
-        <button type="submit" class="btn btn--lg btn--full" id="btn-send-code">
-          <span class="btn__text">Send code</span>
+  <!-- Auth: Email -->
+  <section class="auth" id="auth-email">
+    <div class="auth__card">
+      <div class="auth__logo">
+        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" style="height:28px; filter:brightness(0) saturate(100%) invert(17%) sepia(43%) saturate(1000%) hue-rotate(174deg);">
+        <span class="auth__badge">SCOOP</span>
+      </div>
+      <h1 class="auth__title">Welcome back</h1>
+      <p class="auth__desc">Sign in to manage your accounts and view intelligence.</p>
+      <form id="email-form" novalidate>
+        <label class="auth__label" for="login-email">Work email</label>
+        <input class="auth__input" type="email" id="login-email" placeholder="you@solace.com" required autocomplete="email">
+        <button type="submit" class="btn btn--lg btn--full" id="btn-send-code" style="margin-top:1rem;">
+          <span class="btn__text">Send verification code</span>
           <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Sending...</span>
         </button>
       </form>
-      <div id="email-error" class="account-message account-message--error" hidden>
-        <p id="email-error-text"></p>
-      </div>
+      <div id="email-error" class="auth__error" hidden><p id="email-error-text"></p></div>
     </div>
   </section>
 
-  <!-- Step 2: Enter 6-digit code -->
-  <section class="account-section" id="code-section" hidden>
-    <div class="container">
-      <h1 class="section__title">Check your email</h1>
-      <p class="section__subtitle">Enter the 6-digit code we sent to <strong id="code-email-display"></strong></p>
-      <form id="code-form" class="setup-form" style="max-width:440px" novalidate>
-        <div class="setup-form__fields">
-          <div class="setup-form__field">
-            <label class="setup-form__label" for="otp-code">6-digit code</label>
-            <input class="setup-form__input" type="text" id="otp-code" placeholder="000000" required autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="\d{6}" style="text-align:center; font-size:1.5rem; letter-spacing:0.3em;">
-          </div>
-        </div>
-        <button type="submit" class="btn btn--lg btn--full" id="btn-verify">
+  <!-- Auth: OTP -->
+  <section class="auth" id="auth-otp" hidden>
+    <div class="auth__card">
+      <div class="auth__logo">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00C895" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><polyline points="22,4 12,13 2,4"/></svg>
+      </div>
+      <h1 class="auth__title">Check your email</h1>
+      <p class="auth__desc">We sent a 6-digit code to <strong id="otp-email-display"></strong></p>
+      <form id="otp-form" novalidate>
+        <label class="auth__label" for="otp-code">Verification code</label>
+        <input class="auth__input auth__input--otp" type="text" id="otp-code" placeholder="------" required autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="\d{6}">
+        <button type="submit" class="btn btn--lg btn--full" id="btn-verify" style="margin-top:1rem;">
           <span class="btn__text">Verify</span>
           <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Verifying...</span>
         </button>
       </form>
-      <p style="text-align:center; margin-top:1rem;"><a href="#" id="btn-back" style="color:var(--gray-600); font-size:0.875rem;">Use a different email</a></p>
-      <div id="code-error" class="account-message account-message--error" hidden>
-        <p id="code-error-text"></p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Step 3: Profile -->
-  <section class="account-section" id="profile-section" hidden>
-    <div class="container">
-      <!-- Header -->
-      <div class="account-header">
-        <div>
-          <h1 class="section__title" style="text-align:left" id="profile-name"></h1>
-          <p class="section__subtitle" style="text-align:left" id="profile-email"></p>
-        </div>
-        <button class="btn btn--sm account-signout" id="btn-signout">Sign out</button>
-      </div>
-      <div class="account-stats" id="profile-stats"></div>
-
-      <!-- Tab navigation -->
-      <div class="profile-tabs">
-        <button class="profile-tab profile-tab--active" data-tab="news">Latest News</button>
-        <button class="profile-tab" data-tab="accounts">Edit Accounts</button>
-      </div>
-
-      <!-- Tab: Latest News (grouped by account) -->
-      <div class="profile-panel" id="panel-news">
-        <div id="news-container"></div>
-        <p id="news-empty" class="section__subtitle" style="text-align:left" hidden>No news yet. Your first digest arrives Monday morning.</p>
-      </div>
-
-      <!-- Tab: Edit Accounts -->
-      <div class="profile-panel" id="panel-accounts" hidden>
-        <form id="profile-form" class="setup-form" novalidate>
-          <div class="setup-form__fields">
-            <div class="setup-form__field">
-              <label class="setup-form__label" for="profile-product">Your focus area</label>
-              <input class="setup-form__input" type="text" id="profile-product" placeholder="e.g. Event broker, Event Portal, Agent Mesh, EDA">
-            </div>
-            <div class="setup-form__field setup-form__field--full">
-              <label class="setup-form__label" for="profile-companies">Customer accounts <span class="setup-form__hint">one per line</span></label>
-              <textarea class="setup-form__textarea" id="profile-companies" rows="10"></textarea>
-            </div>
-          </div>
-          <button type="submit" class="btn btn--lg btn--full" id="btn-save">
-            <span class="btn__text">Save changes</span>
-            <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Saving...</span>
-          </button>
-        </form>
-        <div id="save-success" class="account-message" hidden>
-          <div class="account-message__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <p><strong>Saved.</strong> Your next digest will use these accounts.</p>
-        </div>
-      </div>
+      <a href="#" id="btn-back" class="auth__link">Use a different email</a>
+      <div id="otp-error" class="auth__error" hidden><p id="otp-error-text"></p></div>
     </div>
   </section>
 
   <!-- Loading -->
-  <section class="account-section" id="loading-section" hidden>
-    <div class="container" style="text-align:center; padding:120px 0;">
+  <section class="auth" id="auth-loading" hidden>
+    <div class="auth__card" style="text-align:center; padding:4rem 2rem;">
       <div class="loading-dots"><span></span><span></span><span></span></div>
-      <p style="margin-top:16px; color:var(--gray-600);">Loading your account...</p>
+      <p style="margin-top:1rem; color:var(--gray-400); font-size:0.875rem;">Loading your account...</p>
     </div>
   </section>
 
-  <footer class="footer">
+  <!-- Dashboard -->
+  <section class="dash" id="dashboard" hidden>
+    <div class="container">
+
+      <!-- Top bar -->
+      <div class="dash__top">
+        <div>
+          <h1 class="dash__name" id="dash-name"></h1>
+          <p class="dash__email" id="dash-email"></p>
+        </div>
+        <button class="dash__signout" id="btn-signout">Sign out</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="dash__stats" id="dash-stats"></div>
+
+      <!-- Tabs -->
+      <div class="dash__tabs">
+        <button class="dash__tab dash__tab--active" data-tab="news">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          Latest News
+        </button>
+        <button class="dash__tab" data-tab="accounts">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          My Accounts
+        </button>
+      </div>
+
+      <!-- Panel: News -->
+      <div class="dash__panel" id="panel-news">
+        <div id="news-container"></div>
+        <p id="news-empty" class="dash__empty" hidden>No intelligence yet. Your first digest arrives Monday morning.</p>
+      </div>
+
+      <!-- Panel: Accounts -->
+      <div class="dash__panel" id="panel-accounts" hidden>
+        <div class="dash__form-card">
+          <form id="profile-form" novalidate>
+            <label class="auth__label" for="profile-product">Focus area</label>
+            <input class="auth__input" type="text" id="profile-product" placeholder="e.g. Event broker, Event Portal, Agent Mesh">
+            <label class="auth__label" for="profile-companies" style="margin-top:1.25rem;">Customer accounts <span style="font-weight:400; color:var(--gray-400);">one per line</span></label>
+            <textarea class="auth__input" id="profile-companies" rows="12" style="resize:vertical; line-height:1.8;"></textarea>
+            <button type="submit" class="btn btn--lg btn--full" id="btn-save" style="margin-top:1.25rem;">
+              <span class="btn__text">Save changes</span>
+              <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Saving...</span>
+            </button>
+          </form>
+          <div id="save-ok" class="dash__toast" hidden>Changes saved. Next digest will use updated accounts.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="footer" id="footer">
     <div class="container footer__inner">
       <div class="footer__brand">
         <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" style="height:20px; display:inline-block; vertical-align:middle; margin-right:6px;">
