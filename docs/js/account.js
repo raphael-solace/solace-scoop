@@ -90,12 +90,12 @@
 
   document.getElementById('btn-back').addEventListener('click', function (e) { e.preventDefault(); show(emailSection); });
 
-  // ── Session verify ──────────────────────
+  // ── Session verify (fail-closed: no backend = no access) ──
   function verifySession(email, token) {
     fetch(API_URL + '/api/auth/verify-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, token: token }) })
     .then(function(r) { return r.json(); })
-    .then(function(d) { if (d.valid) loadProfile(email); else { localStorage.clear(); show(emailSection); } })
-    .catch(function() { loadProfile(email); }); // offline fallback
+    .then(function(d) { if (d.valid) loadProfile(email); else { localStorage.removeItem('scoop_token'); localStorage.removeItem('scoop_email'); show(emailSection); } })
+    .catch(function() { localStorage.removeItem('scoop_token'); localStorage.removeItem('scoop_email'); show(emailSection); });
   }
 
   // ── Load profile ────────────────────────
