@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: scoop-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PPLX_KEY
+        sync: false
+      - key: GMAIL_ADDRESS
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: ALLOWED_RECIPIENTS
+        sync: false
+      - key: SAP_AICORE_AUTH_URL
+        sync: false
+      - key: SAP_AICORE_CLIENT_ID
+        sync: false
+      - key: SAP_AICORE_CLIENT_SECRET
+        sync: false
+      - key: SAP_AICORE_BASE_URL
+        sync: false
+      - key: SAP_AICORE_RESOURCE_GROUP
+        sync: false
+      - key: AICORE_DEPLOYMENT_PPLX
+        sync: false
+      - key: AICORE_DEPLOYMENT_GPT4O_MINI
+        sync: false
