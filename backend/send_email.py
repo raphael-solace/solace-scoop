@@ -53,17 +53,31 @@ def send_raw_email(to: str, subject: str, html: str) -> None:
 
 
 async def send_digest_email(user: dict, items: list[dict]) -> None:
-    """Send a rendered digest email to a user."""
+    """Send a rendered digest email to a user.
+
+    In review mode (ALLOWED_RECIPIENTS is a single email, not *),
+    all digests are redirected to the reviewer with a prefix showing
+    who the digest was originally for.
+    """
     if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
         print(f"  [dry-run] Would send {len(items)} items to {user['email']}")
         return
 
     html = render_digest(user, items)
+    recipient = user["email"]
     subject = cfg["email"]["subject_template"].format(count=len(items))
+
+    # Review mode: redirect all emails to the single allowed recipient
+    if ALLOWED_RECIPIENTS != "*" and ALLOWED_RECIPIENTS:
+        reviewer = ALLOWED_RECIPIENTS.split(",")[0].strip()
+        if reviewer and recipient.lower() != reviewer.lower():
+            user_name = recipient.split("@")[0].replace(".", " ").title()
+            subject = f"[{user_name}] {subject}"
+            recipient = reviewer
 
     # Run SMTP in a thread so we don't block the event loop
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, send_raw_email, user["email"], subject, html)
+    await loop.run_in_executor(None, send_raw_email, recipient, subject, html)
 
 
 async def send_welcome_email(email: str) -> None:
