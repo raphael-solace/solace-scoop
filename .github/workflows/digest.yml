@@ -1,10 +1,9 @@
 name: Weekly Digest
 
 on:
-  # Schedule disabled — re-enable when ready
-  # schedule:
-  #   - cron: '0 18 * * 0'  # Sunday 8pm CEST - research
-  #   - cron: '0 5 * * 1'   # Monday 7am CEST - send
+  schedule:
+    - cron: '0 18 * * 0'  # Sunday 8pm CEST - research
+    - cron: '0 5 * * 1'   # Monday 7am CEST - send
   workflow_dispatch:
     inputs:
       mode:
