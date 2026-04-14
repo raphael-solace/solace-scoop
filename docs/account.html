@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account - Solace Scoop</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F4E1;</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="container nav__inner">
+      <a href="index.html" class="nav__logo">
+        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" class="nav__logo-img">
+        <span class="nav__badge">SCOOP</span>
+      </a>
+      <div class="nav__links">
+        <a href="index.html">Home</a>
+        <a href="account.html" class="btn btn--sm">My Account</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Login -->
+  <section class="account-section" id="login-section">
+    <div class="container">
+      <h1 class="section__title">My Account</h1>
+      <p class="section__subtitle">Sign in with your work email to manage your accounts and view past digests.</p>
+
+      <form id="login-form" class="setup-form" style="max-width:440px" novalidate>
+        <div class="setup-form__fields">
+          <div class="setup-form__field">
+            <label class="setup-form__label" for="login-email">Your work email</label>
+            <input class="setup-form__input" type="email" id="login-email" placeholder="you@solace.com" required autocomplete="email">
+          </div>
+        </div>
+        <button type="submit" class="btn btn--lg btn--full" id="btn-login">
+          <span class="btn__text">Send magic link</span>
+          <span class="btn__loader" hidden>
+            <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
+            Sending...
+          </span>
+        </button>
+      </form>
+
+      <div id="login-sent" class="account-message" hidden>
+        <div class="account-message__icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <p><strong>Check your email.</strong> Click the link to sign in. It expires in 1 hour.</p>
+      </div>
+
+      <div id="login-error" class="account-message account-message--error" hidden>
+        <p id="login-error-text"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Profile -->
+  <section class="account-section" id="profile-section" hidden>
+    <div class="container">
+      <div class="account-header">
+        <div>
+          <h1 class="section__title" style="text-align:left" id="profile-name"></h1>
+          <p class="section__subtitle" style="text-align:left" id="profile-email"></p>
+        </div>
+        <button class="btn btn--sm account-signout" id="btn-signout">Sign out</button>
+      </div>
+
+      <div class="account-stats" id="profile-stats"></div>
+
+      <!-- Edit form -->
+      <form id="profile-form" class="setup-form" novalidate>
+        <div class="setup-form__fields">
+          <div class="setup-form__field">
+            <label class="setup-form__label" for="profile-product">Your focus area</label>
+            <input class="setup-form__input" type="text" id="profile-product" placeholder="e.g. Event broker, Event Portal, Agent Mesh, EDA">
+          </div>
+          <div class="setup-form__field setup-form__field--full">
+            <label class="setup-form__label" for="profile-companies">Customer accounts <span class="setup-form__hint">one per line</span></label>
+            <textarea class="setup-form__textarea" id="profile-companies" rows="8"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn--lg btn--full" id="btn-save">
+          <span class="btn__text">Save changes</span>
+          <span class="btn__loader" hidden>
+            <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
+            Saving...
+          </span>
+        </button>
+      </form>
+
+      <div id="save-success" class="account-message" hidden>
+        <div class="account-message__icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <p><strong>Saved.</strong> Your next digest will use these accounts.</p>
+      </div>
+
+      <!-- Past digests -->
+      <h2 class="section__title" style="text-align:left; margin-top:3rem; font-size:1.5rem;">Past Digests</h2>
+      <div id="digests-container"></div>
+      <p id="digests-empty" class="section__subtitle" style="text-align:left" hidden>No digests yet. Your first one arrives Monday morning.</p>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <section class="account-section" id="loading-section" hidden>
+    <div class="container" style="text-align:center; padding:120px 0;">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <p style="margin-top:16px; color:var(--gray-600);">Loading your account...</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" style="height: 20px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+        <strong>Scoop</strong>
+      </div>
+      <p class="footer__copy">Powered by Solace Agent Mesh</p>
+    </div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/account.js"></script>
+</body>
+</html>
