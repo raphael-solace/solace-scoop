@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- No external dependencies needed -->
 </head>
 <body>
 
@@ -31,7 +31,7 @@
   <section class="account-section" id="login-section">
     <div class="container">
       <h1 class="section__title">My Account</h1>
-      <p class="section__subtitle">Sign in with your work email to manage your accounts and view past digests.</p>
+      <p class="section__subtitle">Enter your work email to manage your accounts and view past digests.</p>
 
       <form id="login-form" class="setup-form" style="max-width:440px" novalidate>
         <div class="setup-form__fields">
@@ -41,7 +41,7 @@
           </div>
         </div>
         <button type="submit" class="btn btn--lg btn--full" id="btn-login">
-          <span class="btn__text">Send magic link</span>
+          <span class="btn__text">Sign in</span>
           <span class="btn__loader" hidden>
             <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
             Sending...
@@ -49,12 +49,7 @@
         </button>
       </form>
 
-      <div id="login-sent" class="account-message" hidden>
-        <div class="account-message__icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <p><strong>Check your email.</strong> Click the link to sign in. It expires in 1 hour.</p>
-      </div>
+      <!-- login-sent not needed for email-based login -->
 
       <div id="login-error" class="account-message account-message--error" hidden>
         <p id="login-error-text"></p>
