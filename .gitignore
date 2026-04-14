@@ -44,3 +44,4 @@ node_modules/
 .playwright-mcp/
 *.png
 *.csv
+bearer.md

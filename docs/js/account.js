@@ -97,6 +97,7 @@
       });
 
       loadNews(u.id, cos);
+      loadPeople(u.id);
       show('dashboard');
     })
     .catch(function() { localStorage.clear(); show('auth-email'); });
@@ -196,6 +197,65 @@
     })
     .then(function() { btnLoad(btn, false); $('save-ok').hidden = false; setTimeout(function() { $('save-ok').hidden = true; }, 4000); load(email); })
     .catch(function(e) { btnLoad(btn, false); alert('Failed: ' + e.message); });
+  });
+
+  // ── People ──────────────────────────
+  function loadPeople(uid) {
+    sb('people?user_id=eq.' + uid + '&select=id,company,name,title,email,linkedin,salesforce_url&order=company,name')
+    .then(function(people) {
+      if (!people || !people.length) {
+        $('people-list').innerHTML = '<p class="dash__empty">No contacts tracked yet. Add your first contact below.</p>';
+        return;
+      }
+
+      var html = '';
+      people.forEach(function(p) {
+        var links = '';
+        if (p.linkedin) links += '<a href="' + esc(p.linkedin) + '" target="_blank" class="signal__source" style="margin-right:8px;">LinkedIn</a>';
+        if (p.email) links += '<a href="mailto:' + esc(p.email) + '" class="signal__source" style="margin-right:8px;">' + esc(p.email) + '</a>';
+        if (p.salesforce_url) links += '<a href="' + esc(p.salesforce_url) + '" target="_blank" class="signal__source">Salesforce</a>';
+
+        html += '<div class="acct-card" style="margin-bottom:0.75rem;">';
+        html += '<div style="padding:0.875rem 1.25rem; display:flex; align-items:center; justify-content:space-between;">';
+        html += '<div>';
+        html += '<p style="margin:0; font-weight:700; color:var(--navy); font-size:0.875rem;">' + esc(p.name) + '</p>';
+        html += '<p style="margin:2px 0 0; font-size:0.75rem; color:var(--gray-600);">' + esc(p.title || '') + ' at ' + esc(p.company) + '</p>';
+        if (links) html += '<p style="margin:4px 0 0;">' + links + '</p>';
+        html += '</div>';
+        html += '<button onclick="deletePerson(\'' + p.id + '\')" style="background:none; border:none; cursor:pointer; color:var(--gray-400); font-size:1.25rem; padding:0 0.5rem;" title="Remove">&times;</button>';
+        html += '</div></div>';
+      });
+
+      $('people-list').innerHTML = html;
+    });
+  }
+
+  // Global delete function (needs to be accessible from onclick)
+  window.deletePerson = function(id) {
+    sbW('people?id=eq.' + id, 'DELETE').then(function() { loadPeople(userId); });
+  };
+
+  // Add person form
+  $('people-form').addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    $('people-ok').hidden = true;
+    var name = $('person-name').value.trim();
+    var company = $('person-company').value.trim();
+    var title = $('person-title').value.trim();
+    var linkedin = $('person-linkedin').value.trim();
+    if (!name || !company) return;
+
+    sbW('people', 'POST', [{ user_id: userId, name: name, company: company, title: title, linkedin: linkedin }])
+    .then(function() {
+      $('person-name').value = '';
+      $('person-company').value = '';
+      $('person-title').value = '';
+      $('person-linkedin').value = '';
+      $('people-ok').hidden = false;
+      setTimeout(function() { $('people-ok').hidden = true; }, 4000);
+      loadPeople(userId);
+    })
+    .catch(function(e) { alert('Failed: ' + e.message); });
   });
 
   // ── Sign out ────────────────────────

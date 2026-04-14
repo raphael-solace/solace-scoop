@@ -560,3 +560,95 @@ async def generate_digest_for_user(user: dict) -> list[dict]:
 
     print(f"  [done] {len(items)} final signals")
     return items
+
+
+# -- People research ---------------------------
+
+async def research_person(person: dict) -> list[dict]:
+    """Research recent activity for a tracked person.
+
+    person: dict with name, title, company, linkedin
+    Returns list of signal dicts (same format as company signals).
+    """
+    name = person.get("name", "")
+    title = person.get("title", "")
+    company = person.get("company", "")
+    linkedin = person.get("linkedin", "")
+    if not name:
+        return []
+
+    today = date.today()
+    cutoff = today - timedelta(days=14)
+
+    linkedin_hint = f"\nTheir LinkedIn profile is at {linkedin}" if linkedin else ""
+
+    data = await _call_model(
+        system=f"""You are a B2B sales intelligence analyst. Today is {today.isoformat()}.
+Only report activity AFTER {cutoff.isoformat()}. Return only valid JSON.""",
+        prompt=f"""Research recent public activity by {name}, {title} at {company}.{linkedin_hint}
+
+Find:
+- LinkedIn posts or articles they published or shared
+- Conference talks, webinars, or podcast appearances
+- Blog posts or thought leadership articles
+- Press quotes or media mentions
+- Job changes or role updates
+- Public comments on industry trends
+
+Return a JSON array of findings (0 to 3 items). No markdown, no code fences.
+[
+  {{
+    "company": "{company}",
+    "tag": "person_activity",
+    "person_name": "{name}",
+    "date": "<YYYY-MM-DD if known, else empty string>",
+    "headline": "<what they did or said, one specific sentence>",
+    "why": "<why a salesperson should care about this>",
+    "opening_line": "<natural conversation opener referencing this>",
+    "sources": ["<URL if found>"],
+    "risk_or_opportunity": "opportunity",
+    "confidence": "<HIGH if from named source, MEDIUM if inferred>"
+  }}
+]
+
+If nothing found, return []. Do NOT invent activity.""",
+        provider="pplx",
+    )
+
+    content = data["choices"][0]["message"]["content"].strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+
+    try:
+        items = _parse_json(content)
+        if isinstance(items, dict):
+            items = [items]
+    except (json.JSONDecodeError, ValueError):
+        return []
+
+    return [i for i in items if isinstance(i, dict) and i.get("headline")]
+
+
+async def generate_people_signals(people: list[dict]) -> list[dict]:
+    """Research all tracked people. Returns list of signals."""
+    if not people:
+        return []
+
+    all_items = []
+    for i, person in enumerate(people):
+        if i > 0:
+            await asyncio.sleep(cfg["digest"]["pace_between_companies_sec"])
+        name = person.get("name", "?")
+        company = person.get("company", "?")
+        print(f"  [person] {name} at {company}")
+        items = await research_person(person)
+        if items:
+            print(f"    {len(items)} signal(s)")
+            for item in items:
+                item["tag"] = "Person Activity"
+                item["tag_color"] = "blue"
+        else:
+            print(f"    nothing found")
+        all_items.extend(items)
+
+    return all_items

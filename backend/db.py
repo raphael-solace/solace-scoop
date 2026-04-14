@@ -150,6 +150,23 @@ async def delete_user(user_id: str) -> None:
         )
 
 
+# -- People -----------------------------------
+
+async def get_people(user_id: str) -> list[dict]:
+    """Get tracked people for a user."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            _url("people"),
+            headers=_headers(),
+            params={
+                "user_id": f"eq.{user_id}",
+                "select": "id,company,name,title,email,linkedin,salesforce_url",
+            },
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
 # -- OTP Auth ---------------------------------
 
 async def create_otp(email: str) -> str:

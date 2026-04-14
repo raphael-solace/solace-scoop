@@ -99,6 +99,10 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
           Latest News
         </button>
+        <button class="dash__tab" data-tab="people">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
+          My Contacts
+        </button>
         <button class="dash__tab" data-tab="accounts">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           My Accounts
@@ -109,6 +113,40 @@
       <div class="dash__panel" id="panel-news">
         <div id="news-container"></div>
         <p id="news-empty" class="dash__empty" hidden>No intelligence yet. Your first digest arrives Monday morning.</p>
+      </div>
+
+      <!-- Panel: People -->
+      <div class="dash__panel" id="panel-people" hidden>
+        <div id="people-list"></div>
+        <div class="dash__form-card" style="margin-top:1.5rem;">
+          <h3 style="font-family:var(--font-display); font-size:1.25rem; color:var(--navy); margin-bottom:1rem;">Add a contact to track</h3>
+          <form id="people-form" novalidate>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+              <div>
+                <label class="auth__label" for="person-name">Full name</label>
+                <input class="auth__input" type="text" id="person-name" placeholder="Francois Mateos" required>
+              </div>
+              <div>
+                <label class="auth__label" for="person-company">Company</label>
+                <input class="auth__input" type="text" id="person-company" placeholder="BNP Paribas" required>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem;">
+              <div>
+                <label class="auth__label" for="person-title">Title</label>
+                <input class="auth__input" type="text" id="person-title" placeholder="Head of Middleware">
+              </div>
+              <div>
+                <label class="auth__label" for="person-linkedin">LinkedIn URL</label>
+                <input class="auth__input" type="url" id="person-linkedin" placeholder="https://linkedin.com/in/...">
+              </div>
+            </div>
+            <button type="submit" class="btn btn--lg btn--full" style="margin-top:1rem;">
+              <span class="btn__text">Add contact</span>
+            </button>
+          </form>
+          <div id="people-ok" class="dash__toast" hidden>Contact added. Their activity will appear in your next digest.</div>
+        </div>
       </div>
 
       <!-- Panel: Accounts -->
