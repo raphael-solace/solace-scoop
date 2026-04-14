@@ -94,6 +94,20 @@ class DigestRequest(BaseModel):
     api_secret: str
 
 
+class OTPRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
+class VerifySessionRequest(BaseModel):
+    email: EmailStr
+    token: str
+
+
 # -- Endpoints ---------------------------------
 
 @app.get("/health")
@@ -157,3 +171,41 @@ async def unsubscribe(email: str, token: str):
         await delete_user(user["id"])
 
     return {"status": "unsubscribed"}
+
+
+# -- OTP Auth ----------------------------------
+
+@app.post("/api/auth/send-otp")
+async def send_otp(req: OTPRequest):
+    """Send a 6-digit OTP to the user's email via Gmail."""
+    from db import get_user_by_email, create_otp
+    from send_email import send_otp_email
+
+    user = await get_user_by_email(req.email)
+    if user:
+        code = await create_otp(req.email)
+        await send_otp_email(req.email, code)
+
+    # Always return ok (don't leak if email exists)
+    return {"status": "ok"}
+
+
+@app.post("/api/auth/verify-otp")
+async def verify_otp(req: VerifyOTPRequest):
+    """Verify a 6-digit OTP and return a session token."""
+    from db import verify_otp, create_session
+
+    valid = await verify_otp(req.email, req.code)
+    if not valid:
+        return {"error": "Invalid or expired code. Try again."}
+
+    token = await create_session(req.email)
+    return {"status": "ok", "token": token}
+
+
+@app.post("/api/auth/verify-session")
+async def verify_session(req: VerifySessionRequest):
+    """Check if a session token is still valid."""
+    from db import check_session
+    valid = await check_session(req.email, req.token)
+    return {"valid": valid}

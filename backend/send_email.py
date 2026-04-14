@@ -105,6 +105,38 @@ async def send_welcome_email(email: str) -> None:
     await loop.run_in_executor(None, send_raw_email, email, subject, html)
 
 
+async def send_otp_email(email: str, code: str) -> None:
+    """Send a 6-digit OTP code to the user."""
+    if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
+        print(f"  [dry-run] OTP for {email}: {code}")
+        return
+
+    br = cfg["email"]["branding"]
+    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:12px; overflow:hidden;">
+  <tr><td style="padding:16px 24px; background:{br['header_bg']};">
+    <img src="{br['header_logo']}" alt="Solace" style="height:22px; display:inline-block; vertical-align:middle; filter:brightness(0) invert(1);"><span style="font-size:12px; font-weight:700; color:{br['badge_color']}; letter-spacing:0.08em; vertical-align:middle; margin-left:8px;">{br['badge_text']}</span>
+  </td></tr>
+  <tr><td style="padding:32px; text-align:center;">
+    <p style="margin:0 0 16px; font-size:16px; font-weight:700; color:#0f172a;">Your sign-in code</p>
+    <p style="margin:0 0 24px; font-size:40px; font-weight:700; color:#093B5F; letter-spacing:0.2em; font-family:monospace;">{code}</p>
+    <p style="margin:0; font-size:13px; color:#94a3b8;">This code expires in 10 minutes. If you didn't request it, just ignore this email.</p>
+  </td></tr>
+  <tr><td style="padding:14px 24px; background:{br['header_bg']}; text-align:center;">
+    <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.5);">{cfg['email']['footer_text']}</p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>"""
+
+    subject = f"Scoop sign-in code: {code}"
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, send_raw_email, email, subject, html)
+
+
 def render_digest(user: dict, items: list[dict]) -> str:
     """Build the HTML digest email."""
     today = date.today()

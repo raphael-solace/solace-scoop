@@ -8,6 +8,8 @@ Service role key for backend operations (bypasses RLS).
 from __future__ import annotations
 
 import os
+import random
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -146,3 +148,92 @@ async def delete_user(user_id: str) -> None:
             _url("users") + f"?id=eq.{user_id}",
             headers=_headers(),
         )
+
+
+# -- OTP Auth ---------------------------------
+
+async def create_otp(email: str) -> str:
+    """Create a 6-digit OTP, store in auth_tokens, return the code."""
+    code = f"{random.randint(0, 999999):06d}"
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+    async with httpx.AsyncClient() as client:
+        # Clean up old OTPs for this email
+        await client.delete(
+            _url("auth_tokens") + f"?email=eq.{email}",
+            headers=_headers(),
+        )
+        await client.post(
+            _url("auth_tokens"),
+            headers=_headers(),
+            json={"email": email, "token": code, "expires_at": expires},
+        )
+    return code
+
+
+async def verify_otp(email: str, code: str) -> bool:
+    """Verify a 6-digit OTP. Returns True if valid. Deletes on success."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            _url("auth_tokens"),
+            headers=_headers(),
+            params={
+                "email": f"eq.{email}",
+                "token": f"eq.{code}",
+                "used_at": "is.null",
+                "select": "id,expires_at",
+            },
+        )
+        resp.raise_for_status()
+        rows = resp.json()
+
+    if not rows:
+        return False
+
+    row = rows[0]
+    expires = datetime.fromisoformat(row["expires_at"])
+    if datetime.now(timezone.utc) > expires:
+        return False
+
+    # Mark as used
+    async with httpx.AsyncClient() as client:
+        await client.patch(
+            _url("auth_tokens") + f"?id=eq.{row['id']}",
+            headers=_headers(),
+            json={"used_at": datetime.now(timezone.utc).isoformat()},
+        )
+    return True
+
+
+async def create_session(email: str) -> str:
+    """Create a session token (24h), return it."""
+    token = secrets.token_hex(32)
+    expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            _url("auth_tokens"),
+            headers=_headers(),
+            json={"email": email, "token": token, "expires_at": expires},
+        )
+    return token
+
+
+async def check_session(email: str, token: str) -> bool:
+    """Check if a session token is valid."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            _url("auth_tokens"),
+            headers=_headers(),
+            params={
+                "email": f"eq.{email}",
+                "token": f"eq.{token}",
+                "select": "expires_at",
+            },
+        )
+        resp.raise_for_status()
+        rows = resp.json()
+
+    if not rows:
+        return False
+
+    expires = datetime.fromisoformat(rows[0]["expires_at"])
+    return datetime.now(timezone.utc) < expires
