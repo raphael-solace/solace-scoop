@@ -3,8 +3,8 @@
 .env.local
 .env.production
 
-# Frontend config with keys
-docs/js/config.js
+# Frontend config with keys (anon key only — safe to commit)
+# docs/js/config.js
 
 # Handoff and internal docs
 handof.md
