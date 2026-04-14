@@ -268,17 +268,20 @@ If nothing found, return an empty array.""",
 ]
 
 SIGNAL_OUTPUT_INSTRUCTION = """Return a JSON array of signals (0 to 3 items). No markdown, no code fences.
+
+CONTEXT: The reader sells Solace PubSub+ (event broker, event mesh, agent mesh) to {company}. They need to know what's happening at {company} so they can have relevant conversations with their contacts there.
+
 [
   {{
     "company": "{company}",
     "tag": "<one of: {all_tags}>",
     "date": "<YYYY-MM-DD format. MUST be a real date from your sources. If unknown, empty string. NEVER guess.>",
-    "headline": "<What happened, in one clear sentence with names, dates, concrete numbers. Write it like a news ticker. Never use em dashes.>",
-    "so_what": "<In 2-3 sentences, explain the business impact like you're briefing a colleague. What changed? Why now? What does this mean for someone selling to this account? Be specific and concrete, not generic.>",
-    "contact_name": "<If a specific person is mentioned in this news (appointed, promoted, quoted, departed), put their full name here. Otherwise empty string.>",
-    "contact_title": "<Their title if known, else empty string.>",
-    "contact_linkedin": "<Their LinkedIn URL if you found it. Do NOT guess URLs. Empty string if not found.>",
-    "message": "<A ready-to-send 2-sentence message you could paste into a LinkedIn DM or email to a contact at this company about this news. Reference the specific event. Sound human, not salesy. Start with something like 'I noticed...' or 'Saw the news about...' Never mention Solace or any product.>",
+    "headline": "<What happened, in one clear sentence with names, dates, concrete numbers. Write it like a news headline. Never use em dashes.>",
+    "so_what": "<In 2-3 sentences, explain why this matters for someone selling event-driven architecture to {company}. Connect the dots: how does this news create a conversation opportunity about integration, real-time data, or modernization? Be specific to THIS event, not generic.>",
+    "contact_name": "<Who at {company} should you reach out to about THIS specific news? This should be a senior IT/tech leader at {company} (CTO, CIO, Head of Integration, Enterprise Architect, Head of Platform, VP Engineering). Find a real person if possible. If you found a name in your research, use it. Otherwise empty string.>",
+    "contact_title": "<Their title at {company}. Empty string if unknown.>",
+    "contact_linkedin": "<Their LinkedIn URL ONLY if you actually found it. Do NOT guess or construct URLs. Empty string if not found.>",
+    "message": "<A ready-to-send 2-sentence message for a LinkedIn DM or email to the contact at {company}. First sentence: reference the specific news naturally. Second sentence: connect it to event-driven architecture, real-time data, or Solace in a way that feels like a helpful observation, not a pitch. Example: 'Saw the news about [event]. With that kind of real-time data flow, have you looked at event mesh to connect the new systems?' Keep it conversational.>",
     "risk_or_opportunity": "<opportunity | risk | both>",
     "sources": ["<source URLs from your research>"]
   }}
@@ -286,9 +289,9 @@ SIGNAL_OUTPUT_INSTRUCTION = """Return a JSON array of signals (0 to 3 items). No
 
 RULES:
 - Every signal MUST have a specific name, date, or number. No filler.
-- Write "so_what" like you're texting a colleague, not writing a report. Be direct.
-- The "message" must be copy-pasteable. Two sentences max. Reference the specific news.
-- If a person is named in the news, always fill contact_name and contact_title.
+- The "contact_name" should be someone AT {company} the seller would reach out to, NOT a person mentioned in the article from another company.
+- The "message" should naturally bridge from the news to Solace/event-driven architecture. It should feel like a helpful insight, not a cold pitch.
+- Write "so_what" like you're briefing a colleague over coffee. Be direct and specific.
 - Return [] if nothing concrete found. Never invent signals.
 - Never use em dashes (--) in any field.
 - Quality over quantity: one great signal beats three mediocre ones."""
