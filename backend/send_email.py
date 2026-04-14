@@ -194,21 +194,30 @@ def render_digest(user: dict, items: list[dict]) -> str:
         # So what (new field) / fallback to why
         so_what = _esc(item.get("so_what", item.get("why", "")))
 
-        # Contact card (if signal mentions a person)
+        # Contact card (if signal recommends a person)
         contact_html = ""
         contact_name = item.get("contact_name", "")
         if contact_name:
             c_title = _esc(item.get("contact_title", ""))
+            c_company = _esc(item.get("company", ""))
             c_linkedin = item.get("contact_linkedin", "")
-            li_link = f'<a href="{_esc(c_linkedin)}" style="color:#0077B5; text-decoration:none; font-size:10px; font-weight:600;">LinkedIn</a>' if c_linkedin else ""
+
+            # If no direct LinkedIn URL, build a search link
+            if not c_linkedin:
+                import urllib.parse
+                search_q = urllib.parse.quote_plus(f"{contact_name} {item.get('company', '')}")
+                c_linkedin = f"https://www.linkedin.com/search/results/people/?keywords={search_q}"
+
+            li_link = f'<a href="{_esc(c_linkedin)}" style="color:#0077B5; text-decoration:none; font-size:11px; font-weight:600;">LinkedIn &rarr;</a>'
+
             contact_html = f"""
-            <div style="margin-top:8px; padding:8px 10px; background:#f8fafb; border:1px solid #e2e8e6; border-radius:6px;">
+            <div style="margin-top:8px; padding:8px 12px; background:#f8fafb; border:1px solid #e2e8e6; border-radius:6px;">
               <table cellpadding="0" cellspacing="0" width="100%"><tr>
                 <td>
                   <p style="margin:0; font-size:12px; font-weight:700; color:#093B5F;">{_esc(contact_name)}</p>
-                  <p style="margin:1px 0 0; font-size:10px; color:#64748b;">{c_title}</p>
+                  <p style="margin:1px 0 0; font-size:10px; color:#64748b;">{c_title} at {c_company}</p>
                 </td>
-                <td style="text-align:right; vertical-align:top;">{li_link}</td>
+                <td style="text-align:right; vertical-align:middle;">{li_link}</td>
               </tr></table>
             </div>"""
 
