@@ -14,7 +14,6 @@
 </head>
 <body>
 
-  <!-- Nav -->
   <nav class="nav" id="nav">
     <div class="container nav__inner">
       <a href="#" class="nav__logo">
@@ -23,7 +22,7 @@
       </a>
       <div class="nav__links">
         <a href="#how-it-works">How it works</a>
-        <a href="#preview">Preview</a>
+        <a href="#signup">Sign up</a>
         <a href="account.html" class="btn btn--sm">My Account</a>
       </div>
     </div>
@@ -35,8 +34,9 @@
       <div class="hero__label">POWERED BY SOLACE AGENT MESH</div>
       <h1 class="hero__title">Stay ahead of <em>every account.</em></h1>
       <p class="hero__subtitle">Weekly account intelligence delivered to your inbox. AI agents research your customers so you walk into every call prepared.</p>
-      <div style="margin-top:2rem;">
-        <a href="account.html" class="btn btn--lg">Open My Account</a>
+      <div style="margin-top:2rem; display:flex; gap:0.75rem; justify-content:center; flex-wrap:wrap;">
+        <a href="#signup" class="btn btn--lg">Get started</a>
+        <a href="account.html" style="display:inline-flex; align-items:center; gap:0.5rem; font-family:var(--font-body); font-weight:600; font-size:1rem; padding:1rem 2rem; border-radius:100px; border:1.5px solid var(--gray-200); color:var(--navy); text-decoration:none; transition:border-color 0.15s;">Already have an account?</a>
       </div>
     </div>
   </header>
@@ -50,105 +50,112 @@
         <div class="steps__item">
           <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg></div>
           <h3>People Moves</h3>
-          <p>New hires, promotions, and departures at your accounts. Know who's in charge.</p>
+          <p>New hires, promotions, and departures at your accounts.</p>
         </div>
         <div class="steps__item">
           <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
           <h3>Business News</h3>
-          <p>M&A, contracts, product launches, and strategy shifts you can reference in conversations.</p>
+          <p>M&A, contracts, and strategy shifts for conversation openers.</p>
         </div>
         <div class="steps__item">
-          <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg></div>
+          <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg></div>
           <h3>Tech Initiatives</h3>
-          <p>Cloud migration, AI projects, platform modernization, and digital transformation.</p>
+          <p>Cloud migration, AI projects, and digital transformation.</p>
         </div>
         <div class="steps__item">
           <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
           <h3>Partnerships</h3>
-          <p>New vendor selections, SI engagements, and strategic alliances at your accounts.</p>
+          <p>Vendor selections and strategic alliances at your accounts.</p>
         </div>
         <div class="steps__item">
           <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
           <h3>Financial Signals</h3>
-          <p>Earnings, investments, and budget shifts that tell you where the money is going.</p>
+          <p>Earnings, investments, and budget shifts.</p>
         </div>
         <div class="steps__item">
           <div class="steps__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
           <h3>Risks &amp; Competitive</h3>
-          <p>Layoffs, reorgs, competitor wins, and regulatory changes to watch out for.</p>
+          <p>Reorgs, competitor wins, and regulatory changes.</p>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- Signup Form -->
+  <section class="setup" id="signup">
+    <div class="container">
+      <h2 class="section__title">Start getting your weekly brief</h2>
+      <p class="section__subtitle">Sign up in 30 seconds. Your first digest arrives next Monday at 7am.</p>
+
+      <form id="signup-form" class="setup-form" novalidate>
+        <div class="setup-form__fields">
+          <div class="setup-form__field">
+            <label class="setup-form__label" for="signup-email">Your work email</label>
+            <input class="setup-form__input" type="email" id="signup-email" placeholder="you@solace.com" required autocomplete="email">
+          </div>
+          <div class="setup-form__field">
+            <label class="setup-form__label" for="signup-product">What do you sell? <span class="setup-form__hint">your focus area</span></label>
+            <input class="setup-form__input" type="text" id="signup-product" placeholder="e.g. Event broker, Event Portal, Agent Mesh" required>
+          </div>
+          <div class="setup-form__field setup-form__field--full">
+            <label class="setup-form__label" for="signup-companies">Customer accounts to track <span class="setup-form__hint">one per line, up to 20</span></label>
+            <textarea class="setup-form__textarea" id="signup-companies" rows="6" placeholder="Company A&#10;Company B&#10;Company C" required></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn--lg btn--full" id="btn-signup">
+          <span class="btn__text">Sign up for Scoop</span>
+          <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Creating account...</span>
+        </button>
+      </form>
+
+      <div id="signup-success" class="setup-form" style="max-width:640px; text-align:center; display:none;">
+        <div style="font-size:2rem; margin-bottom:1rem;">🎉</div>
+        <h3 style="font-family:var(--font-display); font-size:1.5rem; color:var(--navy); margin-bottom:0.5rem;">You're in!</h3>
+        <p style="color:var(--gray-600); margin-bottom:1.5rem;">Your first digest arrives <strong>Monday at 7am</strong>. We'll cover all the accounts you listed.</p>
+        <a href="account.html" class="btn btn--lg">Go to My Account</a>
+      </div>
+    </div>
+  </section>
+
   <!-- Email Preview -->
-  <section class="setup" id="preview">
+  <section class="steps" id="preview">
     <div class="container">
       <h2 class="section__title">What your Monday email looks like</h2>
-      <p class="section__subtitle">Real signals, sourced and verified. Delivered every Monday at 7am.</p>
+      <p class="section__subtitle">Real signals, sourced and verified.</p>
 
       <div style="max-width:600px; margin:2rem auto 0; background:#fff; border:1px solid #e2e8e6; border-radius:10px; overflow:hidden; box-shadow:0 8px 30px rgba(9,59,95,0.06);">
-        <!-- Email header -->
         <div style="padding:16px 24px; background:#093B5F;">
           <span style="font-size:14px; font-weight:700; color:#fff;">solace.</span>
           <span style="font-size:12px; font-weight:700; color:#00C895; letter-spacing:0.08em; margin-left:8px;">SCOOP</span>
           <span style="font-size:12px; color:rgba(255,255,255,0.6); float:right;">Apr 14, 2026</span>
         </div>
         <div style="padding:16px 24px 8px;">
-          <p style="margin:0; font-size:13px; color:#475569;">Hi Benjamin, 9 signals this week across your accounts.</p>
+          <p style="margin:0; font-size:13px; color:#475569;">Hi there, 9 signals this week across your accounts.</p>
         </div>
-
-        <!-- Signal 1 -->
         <div style="padding:16px 24px; border-bottom:1px solid #f1f5f9;">
-          <p style="margin:0 0 8px;"><span style="font-weight:700; color:#0f172a; font-size:14px;">Iberdrola</span> <span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:100px; background:#ecfdf5; color:#10b981; text-transform:uppercase; letter-spacing:0.04em;">M&amp;A</span> <a href="#" style="color:#6366f1; text-decoration:none; font-size:12px;">iberdrola.com</a></p>
-          <p style="margin:0 0 6px; font-size:13px; line-height:1.5; color:#0f172a;">Iberdrola completed takeover bid for 16.2% of Neoenergia on April 9, reaching 98% ownership of its Brazilian subsidiary for approximately 980 million euros.</p>
-          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">Major capital deployment in Brazil signals commitment to consolidating a key renewable energy asset.</p>
-          <div style="margin-top:10px; padding:10px 12px; background:#f0f0ff; border-radius:6px; border-left:3px solid #6366f1;">
-            <p style="margin:0 0 6px; font-size:10px; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:0.08em;">Scoop thinks</p>
-            <p style="margin:0; font-size:12px; color:#64748b;">💬 <em>"I saw Iberdrola just wrapped up acquiring nearly all of Neoenergia. That's a significant move in Brazil."</em></p>
+          <p style="margin:0 0 8px;"><span style="font-weight:700; color:#0f172a; font-size:14px;">Iberdrola</span> <span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:100px; background:#ecfdf5; color:#10b981; text-transform:uppercase;">M&amp;A</span></p>
+          <p style="margin:0 0 6px; font-size:13px; line-height:1.5; color:#0f172a;">Iberdrola completed takeover bid for 16.2% of Neoenergia, reaching 98% ownership for 980 million euros.</p>
+          <div style="margin-top:8px; padding:8px 10px; background:#f0f0ff; border-radius:5px; border-left:2px solid #6366f1;">
+            <p style="margin:0; font-size:10px; color:#6366f1; font-weight:700;">SCOOP THINKS</p>
+            <p style="margin:2px 0 0; font-size:11px; color:#64748b; font-style:italic;">"I saw Iberdrola just acquired nearly all of Neoenergia. That's a major move in Brazil."</p>
           </div>
         </div>
-
-        <!-- Signal 2 -->
         <div style="padding:16px 24px; border-bottom:1px solid #f1f5f9;">
-          <p style="margin:0 0 8px;"><span style="font-weight:700; color:#0f172a; font-size:14px;">Carrefour</span> <span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:100px; background:#eff6ff; color:#3b82f6; text-transform:uppercase; letter-spacing:0.04em;">Tech Initiative</span> <a href="#" style="color:#6366f1; text-decoration:none; font-size:12px;">retailtechinnovationhub.com</a></p>
-          <p style="margin:0 0 6px; font-size:13px; line-height:1.5; color:#0f172a;">Carrefour introduced an AI-powered grocery shopping service integrated with ChatGPT, targeting France's 26 million users.</p>
-          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">This expands Carrefour's digital storefront into conversational AI, potentially locking in customer loyalty through personalized recommendations.</p>
-          <div style="margin-top:10px; padding:10px 12px; background:#f0f0ff; border-radius:6px; border-left:3px solid #6366f1;">
-            <p style="margin:0 0 6px; font-size:10px; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:0.08em;">Scoop thinks</p>
-            <p style="margin:0; font-size:12px; color:#64748b;">💬 <em>"I saw Carrefour just launched grocery shopping right inside ChatGPT for French users."</em></p>
-          </div>
+          <p style="margin:0 0 8px;"><span style="font-weight:700; color:#0f172a; font-size:14px;">Carrefour</span> <span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:100px; background:#eff6ff; color:#3b82f6; text-transform:uppercase;">Tech Initiative</span></p>
+          <p style="margin:0; font-size:13px; line-height:1.5; color:#0f172a;">Carrefour launched an AI-powered grocery service integrated with ChatGPT for 26 million French users.</p>
         </div>
-
-        <!-- Signal 3 -->
-        <div style="padding:16px 24px; border-bottom:1px solid #f1f5f9;">
-          <p style="margin:0 0 8px;"><span style="font-weight:700; color:#0f172a; font-size:14px;">Schneider Electric</span> <span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:100px; background:#ecfdf5; color:#10b981; text-transform:uppercase; letter-spacing:0.04em;">Partnership</span> <a href="#" style="color:#6366f1; text-decoration:none; font-size:12px;">se.com</a></p>
-          <p style="margin:0 0 6px; font-size:13px; line-height:1.5; color:#0f172a;">Schneider Electric and Switch expanded their partnership with a $1.9 billion supply capacity agreement for AI data center infrastructure.</p>
-          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">Signals deepening commitment to AI infrastructure, opening doors for suppliers supporting hyperscale data center growth.</p>
-        </div>
-
-        <!-- More signals indicator -->
-        <div style="padding:12px 24px; text-align:center; color:#94a3b8; font-size:12px;">
-          + 6 more signals in your full digest
-        </div>
-
-        <!-- Email footer -->
+        <div style="padding:12px 24px; text-align:center; color:#94a3b8; font-size:12px;">+ 7 more signals</div>
         <div style="padding:14px 24px; background:#093B5F; text-align:center;">
-          <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.5);">Tracking 20 accounts · Powered by Solace Agent Mesh</p>
+          <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.5);">Powered by Solace Agent Mesh</p>
         </div>
-      </div>
-
-      <div style="text-align:center; margin-top:2rem;">
-        <a href="account.html" class="btn btn--lg">Manage My Account</a>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="container footer__inner">
       <div class="footer__brand">
-        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" style="height: 20px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" style="height:20px; display:inline-block; vertical-align:middle; margin-right:6px;">
         <strong>Scoop</strong>
       </div>
       <p class="footer__copy">Powered by Solace Agent Mesh</p>
@@ -156,5 +163,74 @@
   </footer>
 
   <script src="js/config.js"></script>
+  <script>
+  (function() {
+    var SUPABASE_URL = window.SCOOP_SUPABASE_URL || '';
+    var SUPABASE_KEY = window.SCOOP_SUPABASE_KEY || '';
+
+    document.getElementById('signup-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var email = document.getElementById('signup-email').value.trim().toLowerCase();
+      var product = document.getElementById('signup-product').value.trim();
+      var companies = document.getElementById('signup-companies').value.trim().split('\n').map(function(s){return s.trim();}).filter(Boolean);
+
+      if (!email || !product || !companies.length) return;
+
+      var btn = document.getElementById('btn-signup');
+      btn.querySelector('.btn__text').hidden = true;
+      btn.querySelector('.btn__loader').hidden = false;
+      btn.disabled = true;
+
+      // Try Supabase RPC first, fallback to direct REST
+      var headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
+
+      fetch(SUPABASE_URL + '/rest/v1/rpc/signup', {
+        method: 'POST', headers: headers,
+        body: JSON.stringify({ p_email: email, p_product: product, p_companies: companies })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d && d.error) throw new Error(d.error);
+        document.getElementById('signup-form').style.display = 'none';
+        document.getElementById('signup-success').style.display = 'block';
+      })
+      .catch(function() {
+        // Fallback: direct insert
+        var h2 = Object.assign({}, headers, { Prefer: 'return=representation,resolution=merge-duplicates' });
+        fetch(SUPABASE_URL + '/rest/v1/users?on_conflict=email', { method: 'POST', headers: h2, body: JSON.stringify({ email: email, product: product }) })
+        .then(function(r) { return r.json(); })
+        .then(function(rows) {
+          if (!rows || !rows.length) throw new Error('Failed');
+          var uid = rows[0].id;
+          var body = companies.slice(0, 20).map(function(n) { return { user_id: uid, name: n }; });
+          return fetch(SUPABASE_URL + '/rest/v1/companies', { method: 'POST', headers: headers, body: JSON.stringify(body) });
+        })
+        .then(function() {
+          document.getElementById('signup-form').style.display = 'none';
+          document.getElementById('signup-success').style.display = 'block';
+        })
+        .catch(function(err) {
+          btn.querySelector('.btn__text').hidden = false;
+          btn.querySelector('.btn__loader').hidden = true;
+          btn.disabled = false;
+          alert('Signup failed: ' + err.message);
+        });
+      });
+    });
+
+    // Nav scroll
+    window.addEventListener('scroll', function() {
+      document.getElementById('nav').classList.toggle('nav--scrolled', window.scrollY > 10);
+    }, { passive: true });
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+      a.addEventListener('click', function(e) {
+        var t = document.querySelector(this.getAttribute('href'));
+        if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+    });
+  })();
+  </script>
 </body>
 </html>
