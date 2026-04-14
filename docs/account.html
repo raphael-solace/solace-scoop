@@ -77,6 +77,7 @@
   <!-- Step 3: Profile -->
   <section class="account-section" id="profile-section" hidden>
     <div class="container">
+      <!-- Header -->
       <div class="account-header">
         <div>
           <h1 class="section__title" style="text-align:left" id="profile-name"></h1>
@@ -85,29 +86,42 @@
         <button class="btn btn--sm account-signout" id="btn-signout">Sign out</button>
       </div>
       <div class="account-stats" id="profile-stats"></div>
-      <form id="profile-form" class="setup-form" novalidate>
-        <div class="setup-form__fields">
-          <div class="setup-form__field">
-            <label class="setup-form__label" for="profile-product">Your focus area</label>
-            <input class="setup-form__input" type="text" id="profile-product" placeholder="e.g. Event broker, Event Portal, Agent Mesh, EDA">
-          </div>
-          <div class="setup-form__field setup-form__field--full">
-            <label class="setup-form__label" for="profile-companies">Customer accounts <span class="setup-form__hint">one per line</span></label>
-            <textarea class="setup-form__textarea" id="profile-companies" rows="8"></textarea>
-          </div>
-        </div>
-        <button type="submit" class="btn btn--lg btn--full" id="btn-save">
-          <span class="btn__text">Save changes</span>
-          <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Saving...</span>
-        </button>
-      </form>
-      <div id="save-success" class="account-message" hidden>
-        <div class="account-message__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <p><strong>Saved.</strong> Your next digest will use these accounts.</p>
+
+      <!-- Tab navigation -->
+      <div class="profile-tabs">
+        <button class="profile-tab profile-tab--active" data-tab="news">Latest News</button>
+        <button class="profile-tab" data-tab="accounts">Edit Accounts</button>
       </div>
-      <h2 class="section__title" style="text-align:left; margin-top:3rem; font-size:1.5rem;">Past Digests</h2>
-      <div id="digests-container"></div>
-      <p id="digests-empty" class="section__subtitle" style="text-align:left" hidden>No digests yet. Your first one arrives Monday morning.</p>
+
+      <!-- Tab: Latest News (grouped by account) -->
+      <div class="profile-panel" id="panel-news">
+        <div id="news-container"></div>
+        <p id="news-empty" class="section__subtitle" style="text-align:left" hidden>No news yet. Your first digest arrives Monday morning.</p>
+      </div>
+
+      <!-- Tab: Edit Accounts -->
+      <div class="profile-panel" id="panel-accounts" hidden>
+        <form id="profile-form" class="setup-form" novalidate>
+          <div class="setup-form__fields">
+            <div class="setup-form__field">
+              <label class="setup-form__label" for="profile-product">Your focus area</label>
+              <input class="setup-form__input" type="text" id="profile-product" placeholder="e.g. Event broker, Event Portal, Agent Mesh, EDA">
+            </div>
+            <div class="setup-form__field setup-form__field--full">
+              <label class="setup-form__label" for="profile-companies">Customer accounts <span class="setup-form__hint">one per line</span></label>
+              <textarea class="setup-form__textarea" id="profile-companies" rows="10"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn--lg btn--full" id="btn-save">
+            <span class="btn__text">Save changes</span>
+            <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Saving...</span>
+          </button>
+        </form>
+        <div id="save-success" class="account-message" hidden>
+          <div class="account-message__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <p><strong>Saved.</strong> Your next digest will use these accounts.</p>
+        </div>
+      </div>
     </div>
   </section>
 
