@@ -1,36 +1,36 @@
 /* ============================================
    Solace Scoop - Account Management
-   Email-based login using Supabase REST API
+   Supabase Auth OTP (6-digit email code)
    ============================================ */
 (function () {
   'use strict';
 
   var SUPABASE_URL = window.SCOOP_SUPABASE_URL || '';
   var SUPABASE_KEY = window.SCOOP_SUPABASE_KEY || '';
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.error('Supabase not configured.');
-    return;
-  }
-
-  function sbHeaders() {
-    return {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    };
-  }
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var pendingEmail = '';
 
   // ── DOM ─────────────────────────────────
-  var loginSection = document.getElementById('login-section');
+  var emailSection = document.getElementById('email-section');
+  var codeSection = document.getElementById('code-section');
   var profileSection = document.getElementById('profile-section');
   var loadingSection = document.getElementById('loading-section');
 
-  var loginForm = document.getElementById('login-form');
+  var emailForm = document.getElementById('email-form');
   var loginEmail = document.getElementById('login-email');
-  var loginError = document.getElementById('login-error');
-  var loginErrorText = document.getElementById('login-error-text');
-  var btnLogin = document.getElementById('btn-login');
+  var btnSendCode = document.getElementById('btn-send-code');
+  var emailError = document.getElementById('email-error');
+  var emailErrorText = document.getElementById('email-error-text');
+
+  var codeForm = document.getElementById('code-form');
+  var otpCode = document.getElementById('otp-code');
+  var codeEmailDisplay = document.getElementById('code-email-display');
+  var btnVerify = document.getElementById('btn-verify');
+  var btnBack = document.getElementById('btn-back');
+  var codeError = document.getElementById('code-error');
+  var codeErrorText = document.getElementById('code-error-text');
 
   var profileName = document.getElementById('profile-name');
   var profileEmail = document.getElementById('profile-email');
@@ -44,215 +44,197 @@
   var digestsContainer = document.getElementById('digests-container');
   var digestsEmpty = document.getElementById('digests-empty');
 
-  var currentUser = null;
-
-  // ── Nav scroll ──────────────────────────
   var nav = document.getElementById('nav');
   window.addEventListener('scroll', function () {
     nav.classList.toggle('nav--scrolled', window.scrollY > 10);
   }, { passive: true });
 
-  // ── State ───────────────────────────────
-  function show(section) {
-    loginSection.hidden = true;
-    profileSection.hidden = true;
-    loadingSection.hidden = true;
-    section.hidden = false;
+  function show(s) {
+    emailSection.hidden = codeSection.hidden = profileSection.hidden = loadingSection.hidden = true;
+    s.hidden = false;
   }
 
-  function setLoading(btn, loading) {
-    btn.querySelector('.btn__text').hidden = loading;
-    btn.querySelector('.btn__loader').hidden = !loading;
-    btn.disabled = loading;
+  function setLoading(btn, on) {
+    btn.querySelector('.btn__text').hidden = on;
+    btn.querySelector('.btn__loader').hidden = !on;
+    btn.disabled = on;
   }
 
   // ── Init ────────────────────────────────
-  function init() {
-    var saved = localStorage.getItem('scoop_email');
-    if (saved) {
+  async function init() {
+    var r = await sb.auth.getSession();
+    if (r.data.session) {
       show(loadingSection);
-      loadProfile(saved);
+      loadProfile(r.data.session.user.email);
     } else {
-      show(loginSection);
+      show(emailSection);
     }
   }
 
-  // ── Login ───────────────────────────────
-  loginForm.addEventListener('submit', function (e) {
+  // ── Step 1: Send OTP ────────────────────
+  emailForm.addEventListener('submit', async function (e) {
     e.preventDefault();
-    loginError.hidden = true;
+    emailError.hidden = true;
     var email = loginEmail.value.trim().toLowerCase();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      loginEmail.focus();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { loginEmail.focus(); return; }
+
+    setLoading(btnSendCode, true);
+    var r = await sb.auth.signInWithOtp({ email: email });
+    setLoading(btnSendCode, false);
+
+    if (r.error) {
+      emailErrorText.textContent = r.error.message;
+      emailError.hidden = false;
       return;
     }
-    setLoading(btnLogin, true);
-    loadProfile(email);
+
+    pendingEmail = email;
+    codeEmailDisplay.textContent = email;
+    show(codeSection);
+    otpCode.focus();
   });
 
-  // ── Load profile ────────────────────────
-  function loadProfile(email) {
-    fetch(SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(email) + '&select=id,email,product,plan,created_at,companies(id,name)', {
-      headers: sbHeaders()
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (rows) {
-      setLoading(btnLogin, false);
-      if (!rows || !rows.length) {
-        loginErrorText.textContent = 'No account found for ' + email + '. Sign up on the home page first.';
-        loginError.hidden = false;
-        show(loginSection);
-        return;
-      }
+  // ── Step 2: Verify OTP ──────────────────
+  codeForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    codeError.hidden = true;
+    var code = otpCode.value.trim();
+    if (!code || code.length !== 6) { otpCode.focus(); return; }
 
-      currentUser = rows[0];
-      localStorage.setItem('scoop_email', email);
+    setLoading(btnVerify, true);
+    var r = await sb.auth.verifyOtp({ email: pendingEmail, token: code, type: 'email' });
+    setLoading(btnVerify, false);
 
-      var name = email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
-      var companies = (currentUser.companies || []).map(function (c) { return c.name; });
-      var since = new Date(currentUser.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    if (r.error) {
+      codeErrorText.textContent = r.error.message;
+      codeError.hidden = false;
+      return;
+    }
 
-      profileName.textContent = name;
-      profileEmail.textContent = email;
-      profileProduct.value = currentUser.product || '';
-      profileCompanies.value = companies.join('\n');
+    show(loadingSection);
+    loadProfile(pendingEmail);
+  });
 
-      // Digest count
-      fetch(SUPABASE_URL + '/rest/v1/digests?user_id=eq.' + currentUser.id + '&select=id', {
-        headers: sbHeaders()
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (digests) {
-        var dc = digests.length || 0;
-        profileStats.innerHTML =
-          '<span class="account-stat">' + companies.length + ' account' + (companies.length !== 1 ? 's' : '') + '</span>'
-          + '<span class="account-stat">' + dc + ' digest' + (dc !== 1 ? 's' : '') + ' sent</span>'
-          + '<span class="account-stat">Since ' + since + '</span>';
-      });
+  btnBack.addEventListener('click', function (e) {
+    e.preventDefault();
+    otpCode.value = '';
+    show(emailSection);
+  });
 
-      loadDigests(currentUser.id);
+  // ── Load profile (authenticated) ────────
+  async function loadProfile(authEmail) {
+    // Use service-role-free approach: query via Supabase client (RLS scoped)
+    var r = await sb.from('users')
+      .select('id, email, product, plan, created_at, companies(id, name)')
+      .eq('email', authEmail)
+      .single();
+
+    if (r.error || !r.data) {
+      profileName.textContent = authEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, function(c){return c.toUpperCase();});
+      profileEmail.textContent = authEmail;
+      profileStats.innerHTML = '<span class="account-stat">New account</span>';
+      digestsEmpty.hidden = false;
       show(profileSection);
-    })
-    .catch(function (err) {
-      setLoading(btnLogin, false);
-      loginErrorText.textContent = 'Connection error. Try again.';
-      loginError.hidden = false;
-      show(loginSection);
-    });
+      return;
+    }
+
+    var user = r.data;
+    var name = user.email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, function(c){return c.toUpperCase();});
+    var companies = (user.companies || []).map(function(c){ return c.name; });
+    var since = new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+    profileName.textContent = name;
+    profileEmail.textContent = user.email;
+    profileProduct.value = user.product || '';
+    profileCompanies.value = companies.join('\n');
+
+    var dc = await sb.from('digests').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+    var digestCount = dc.count || 0;
+
+    profileStats.innerHTML =
+      '<span class="account-stat">' + companies.length + ' account' + (companies.length !== 1 ? 's' : '') + '</span>'
+      + '<span class="account-stat">' + digestCount + ' digest' + (digestCount !== 1 ? 's' : '') + ' sent</span>'
+      + '<span class="account-stat">Since ' + since + '</span>';
+
+    loadDigests(user.id);
+    show(profileSection);
   }
 
-  // ── Load past digests ───────────────────
-  function loadDigests(userId) {
-    fetch(SUPABASE_URL + '/rest/v1/digests?user_id=eq.' + userId + '&select=sent_at,item_count,items&order=sent_at.desc&limit=4', {
-      headers: sbHeaders()
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (digests) {
-      if (!digests || !digests.length) {
-        digestsEmpty.hidden = false;
-        digestsContainer.innerHTML = '';
-        return;
-      }
+  // ── Digests ─────────────────────────────
+  async function loadDigests(userId) {
+    var r = await sb.from('digests').select('sent_at, item_count, items').eq('user_id', userId).order('sent_at', { ascending: false }).limit(4);
+    var digests = r.data || [];
+    if (!digests.length) { digestsEmpty.hidden = false; digestsContainer.innerHTML = ''; return; }
 
-      digestsEmpty.hidden = true;
-      var html = '';
-
-      digests.forEach(function (digest) {
-        var dateStr = new Date(digest.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        var items = digest.items || [];
-
-        html += '<div class="digest-card">';
-        html += '<div class="digest-card__header">';
-        html += '<span class="digest-card__date">' + dateStr + '</span>';
-        html += '<span class="digest-card__count">' + items.length + ' signal' + (items.length !== 1 ? 's' : '') + '</span>';
-        html += '</div>';
-
-        items.forEach(function (item) {
-          var sourceUrl = item.source_url || (item.sources && item.sources[0]) || '';
-          var sourceLink = '';
-          if (sourceUrl) {
-            var domain = sourceUrl.split('//')[1];
-            if (domain) domain = domain.split('/')[0].replace('www.', '');
-            sourceLink = ' <a href="' + esc(sourceUrl) + '" target="_blank" style="color:#6366f1; text-decoration:none; font-size:12px;">' + esc(domain || 'source') + '</a>';
-          }
-
-          html += '<div class="digest-card__signal">';
-          html += '<p class="digest-card__signal-header"><strong>' + esc(item.company || '') + '</strong> <span class="digest-card__tag">' + esc(item.tag || '') + '</span>' + sourceLink + '</p>';
-          html += '<p class="digest-card__headline">' + esc(item.headline || '') + '</p>';
-          if (item.why) html += '<p class="digest-card__why">' + esc(item.why) + '</p>';
-          if (item.opening_line) html += '<p class="digest-card__opener">💬 <em>"' + esc(item.opening_line) + '"</em></p>';
-          html += '</div>';
-        });
-
+    digestsEmpty.hidden = true;
+    var html = '';
+    digests.forEach(function(d) {
+      var dateStr = new Date(d.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      var items = d.items || [];
+      html += '<div class="digest-card"><div class="digest-card__header"><span class="digest-card__date">' + dateStr + '</span><span class="digest-card__count">' + items.length + ' signal' + (items.length !== 1 ? 's' : '') + '</span></div>';
+      items.forEach(function(item) {
+        var src = item.source_url || (item.sources && item.sources[0]) || '';
+        var link = '';
+        if (src) { var dom = (src.split('//')[1]||'').split('/')[0].replace('www.',''); link = ' <a href="' + esc(src) + '" target="_blank" style="color:#6366f1;text-decoration:none;font-size:12px">' + esc(dom) + '</a>'; }
+        html += '<div class="digest-card__signal">';
+        html += '<p class="digest-card__signal-header"><strong>' + esc(item.company||'') + '</strong> <span class="digest-card__tag">' + esc(item.tag||'') + '</span>' + link + '</p>';
+        html += '<p class="digest-card__headline">' + esc(item.headline||'') + '</p>';
+        if (item.why) html += '<p class="digest-card__why">' + esc(item.why) + '</p>';
+        if (item.opening_line) html += '<p class="digest-card__opener">💬 <em>"' + esc(item.opening_line) + '"</em></p>';
         html += '</div>';
       });
-
-      digestsContainer.innerHTML = html;
+      html += '</div>';
     });
+    digestsContainer.innerHTML = html;
   }
 
-  // ── Save changes ────────────────────────
-  profileForm.addEventListener('submit', function (e) {
+  // ── Save ────────────────────────────────
+  profileForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     saveSuccess.hidden = true;
     setLoading(btnSave, true);
 
     var product = profileProduct.value.trim();
-    var companiesRaw = profileCompanies.value.trim();
-    var companies = companiesRaw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+    var companies = profileCompanies.value.trim().split('\n').map(function(s){return s.trim();}).filter(Boolean);
 
-    // Delete old companies, insert new ones
-    var userId = currentUser.id;
+    // Get user ID
+    var session = (await sb.auth.getSession()).data.session;
+    if (!session) { show(emailSection); return; }
+    var email = session.user.email;
 
-    fetch(SUPABASE_URL + '/rest/v1/companies?user_id=eq.' + userId, {
-      method: 'DELETE',
-      headers: sbHeaders()
-    })
-    .then(function () {
-      if (!companies.length) return;
-      var rows = companies.map(function (name) { return { user_id: userId, name: name }; });
-      return fetch(SUPABASE_URL + '/rest/v1/companies', {
-        method: 'POST',
-        headers: sbHeaders(),
-        body: JSON.stringify(rows)
-      });
-    })
-    .then(function () {
-      // Update product via upsert
-      var h = sbHeaders();
-      h['Prefer'] = 'return=representation,resolution=merge-duplicates';
-      return fetch(SUPABASE_URL + '/rest/v1/users?on_conflict=email', {
-        method: 'POST',
-        headers: h,
-        body: JSON.stringify({ email: currentUser.email, product: product })
-      });
-    })
-    .then(function () {
-      setLoading(btnSave, false);
-      saveSuccess.hidden = false;
-      setTimeout(function () { saveSuccess.hidden = true; }, 4000);
-      loadProfile(currentUser.email);
-    })
-    .catch(function (err) {
-      setLoading(btnSave, false);
-      alert('Failed to save: ' + err.message);
-    });
+    var ur = await sb.from('users').select('id').eq('email', email).single();
+    if (!ur.data) { setLoading(btnSave, false); alert('Account not found'); return; }
+    var userId = ur.data.id;
+
+    // Update product
+    await sb.from('users').update({ product: product, updated_at: new Date().toISOString() }).eq('id', userId);
+
+    // Replace companies
+    await sb.from('companies').delete().eq('user_id', userId);
+    if (companies.length) {
+      var rows = companies.map(function(name) { return { user_id: userId, name: name }; });
+      await sb.from('companies').insert(rows);
+    }
+
+    setLoading(btnSave, false);
+    saveSuccess.hidden = false;
+    setTimeout(function(){ saveSuccess.hidden = true; }, 4000);
+    loadProfile(email);
   });
 
   // ── Sign out ────────────────────────────
-  btnSignout.addEventListener('click', function () {
-    localStorage.removeItem('scoop_email');
-    currentUser = null;
-    loginForm.hidden = false;
-    loginError.hidden = true;
-    show(loginSection);
+  btnSignout.addEventListener('click', async function () {
+    await sb.auth.signOut();
+    otpCode.value = '';
+    loginEmail.value = '';
+    show(emailSection);
   });
 
-  // ── Helpers ─────────────────────────────
-  function esc(s) {
-    if (!s) return '';
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
+  function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  sb.auth.onAuthStateChange(function(event) {
+    if (event === 'SIGNED_OUT') show(emailSection);
+  });
 
   init();
 })();

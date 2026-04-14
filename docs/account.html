@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <!-- No external dependencies needed -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -27,37 +27,54 @@
     </div>
   </nav>
 
-  <!-- Login -->
-  <section class="account-section" id="login-section">
+  <!-- Step 1: Enter email -->
+  <section class="account-section" id="email-section">
     <div class="container">
       <h1 class="section__title">My Account</h1>
-      <p class="section__subtitle">Enter your work email to manage your accounts and view past digests.</p>
-
-      <form id="login-form" class="setup-form" style="max-width:440px" novalidate>
+      <p class="section__subtitle">Enter your work email. We'll send you a 6-digit code to sign in.</p>
+      <form id="email-form" class="setup-form" style="max-width:440px" novalidate>
         <div class="setup-form__fields">
           <div class="setup-form__field">
             <label class="setup-form__label" for="login-email">Your work email</label>
             <input class="setup-form__input" type="email" id="login-email" placeholder="you@solace.com" required autocomplete="email">
           </div>
         </div>
-        <button type="submit" class="btn btn--lg btn--full" id="btn-login">
-          <span class="btn__text">Sign in</span>
-          <span class="btn__loader" hidden>
-            <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
-            Sending...
-          </span>
+        <button type="submit" class="btn btn--lg btn--full" id="btn-send-code">
+          <span class="btn__text">Send code</span>
+          <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Sending...</span>
         </button>
       </form>
-
-      <!-- login-sent not needed for email-based login -->
-
-      <div id="login-error" class="account-message account-message--error" hidden>
-        <p id="login-error-text"></p>
+      <div id="email-error" class="account-message account-message--error" hidden>
+        <p id="email-error-text"></p>
       </div>
     </div>
   </section>
 
-  <!-- Profile -->
+  <!-- Step 2: Enter 6-digit code -->
+  <section class="account-section" id="code-section" hidden>
+    <div class="container">
+      <h1 class="section__title">Check your email</h1>
+      <p class="section__subtitle">Enter the 6-digit code we sent to <strong id="code-email-display"></strong></p>
+      <form id="code-form" class="setup-form" style="max-width:440px" novalidate>
+        <div class="setup-form__fields">
+          <div class="setup-form__field">
+            <label class="setup-form__label" for="otp-code">6-digit code</label>
+            <input class="setup-form__input" type="text" id="otp-code" placeholder="000000" required autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="\d{6}" style="text-align:center; font-size:1.5rem; letter-spacing:0.3em;">
+          </div>
+        </div>
+        <button type="submit" class="btn btn--lg btn--full" id="btn-verify">
+          <span class="btn__text">Verify</span>
+          <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Verifying...</span>
+        </button>
+      </form>
+      <p style="text-align:center; margin-top:1rem;"><a href="#" id="btn-back" style="color:var(--gray-600); font-size:0.875rem;">Use a different email</a></p>
+      <div id="code-error" class="account-message account-message--error" hidden>
+        <p id="code-error-text"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 3: Profile -->
   <section class="account-section" id="profile-section" hidden>
     <div class="container">
       <div class="account-header">
@@ -67,10 +84,7 @@
         </div>
         <button class="btn btn--sm account-signout" id="btn-signout">Sign out</button>
       </div>
-
       <div class="account-stats" id="profile-stats"></div>
-
-      <!-- Edit form -->
       <form id="profile-form" class="setup-form" novalidate>
         <div class="setup-form__fields">
           <div class="setup-form__field">
@@ -84,21 +98,13 @@
         </div>
         <button type="submit" class="btn btn--lg btn--full" id="btn-save">
           <span class="btn__text">Save changes</span>
-          <span class="btn__loader" hidden>
-            <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg>
-            Saving...
-          </span>
+          <span class="btn__loader" hidden><svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"/></svg> Saving...</span>
         </button>
       </form>
-
       <div id="save-success" class="account-message" hidden>
-        <div class="account-message__icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
+        <div class="account-message__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
         <p><strong>Saved.</strong> Your next digest will use these accounts.</p>
       </div>
-
-      <!-- Past digests -->
       <h2 class="section__title" style="text-align:left; margin-top:3rem; font-size:1.5rem;">Past Digests</h2>
       <div id="digests-container"></div>
       <p id="digests-empty" class="section__subtitle" style="text-align:left" hidden>No digests yet. Your first one arrives Monday morning.</p>
@@ -116,7 +122,7 @@
   <footer class="footer">
     <div class="container footer__inner">
       <div class="footer__brand">
-        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" style="height: 20px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" style="height:20px; display:inline-block; vertical-align:middle; margin-right:6px;">
         <strong>Scoop</strong>
       </div>
       <p class="footer__copy">Powered by Solace Agent Mesh</p>
