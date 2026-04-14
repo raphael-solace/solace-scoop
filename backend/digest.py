@@ -272,26 +272,26 @@ SIGNAL_OUTPUT_INSTRUCTION = """Return a JSON array of signals (0 to 3 items). No
   {{
     "company": "{company}",
     "tag": "<one of: {all_tags}>",
-    "date": "<YYYY-MM-DD format. MUST be a real date from your sources. If you cannot determine the exact date, use empty string. NEVER guess a date.>",
-    "headline": "<one specific sentence with names, dates, concrete details. Never use em dashes.>",
-    "why": "<one sentence explaining why a salesperson covering this account should care. Focus on the business impact, not on any specific product. What does this mean for the relationship?>",
-    "urgency": "<IMMEDIATE | THIS_WEEK | THIS_MONTH | THIS_QUARTER>",
-    "window": "<why timing matters and when it closes>",
-    "opening_line": "<natural conversation starter referencing this news, no jargon, no selling>",
+    "date": "<YYYY-MM-DD format. MUST be a real date from your sources. If unknown, empty string. NEVER guess.>",
+    "headline": "<What happened, in one clear sentence with names, dates, concrete numbers. Write it like a news ticker. Never use em dashes.>",
+    "so_what": "<In 2-3 sentences, explain the business impact like you're briefing a colleague. What changed? Why now? What does this mean for someone selling to this account? Be specific and concrete, not generic.>",
+    "contact_name": "<If a specific person is mentioned in this news (appointed, promoted, quoted, departed), put their full name here. Otherwise empty string.>",
+    "contact_title": "<Their title if known, else empty string.>",
+    "contact_linkedin": "<Their LinkedIn URL if you found it. Do NOT guess URLs. Empty string if not found.>",
+    "message": "<A ready-to-send 2-sentence message you could paste into a LinkedIn DM or email to a contact at this company about this news. Reference the specific event. Sound human, not salesy. Start with something like 'I noticed...' or 'Saw the news about...' Never mention Solace or any product.>",
     "risk_or_opportunity": "<opportunity | risk | both>",
-    "suggested_action": "<who to contact, what channel, what to say>",
-    "confidence": "<HIGH | MEDIUM | LOW>",
     "sources": ["<source URLs from your research>"]
   }}
 ]
 
 RULES:
-- Every signal MUST have a specific name, date, or number
-- The "date" field MUST be YYYY-MM-DD format (e.g. 2026-04-08). If unsure of exact date, leave empty.
-- The "why" should explain business relevance, NOT force a connection to any specific product
-- The "opening_line" should be something you'd naturally say to a contact, not a sales pitch
+- Every signal MUST have a specific name, date, or number. No filler.
+- Write "so_what" like you're texting a colleague, not writing a report. Be direct.
+- The "message" must be copy-pasteable. Two sentences max. Reference the specific news.
+- If a person is named in the news, always fill contact_name and contact_title.
 - Return [] if nothing concrete found. Never invent signals.
-- Never use em dashes (--) in any field"""
+- Never use em dashes (--) in any field.
+- Quality over quantity: one great signal beats three mediocre ones."""
 
 
 async def _run_company_query(

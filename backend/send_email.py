@@ -137,10 +137,17 @@ async def send_otp_email(email: str, code: str) -> None:
     await loop.run_in_executor(None, send_raw_email, email, subject, html)
 
 
+def _esc(s: str) -> str:
+    """HTML-escape a string."""
+    return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
 def render_digest(user: dict, items: list[dict]) -> str:
     """Build the HTML digest email."""
     today = date.today()
     next_monday = today + timedelta(days=(7 - today.weekday()) % 7 or 7)
+    br = cfg["email"]["branding"]
+    footer = cfg["email"]["footer_text"]
 
     tag_colors = {
         "red": {"bg": "#fef2f2", "fg": "#ef4444"},
@@ -153,80 +160,108 @@ def render_digest(user: dict, items: list[dict]) -> str:
     for item in items:
         colors = tag_colors.get(item.get("tag_color", "blue"), tag_colors["blue"])
 
-        # Source link
+        # Source
         source_url = item.get("source_url", "")
         if not source_url:
             sources = item.get("sources", [])
-            if sources:
-                source_url = sources[0] if isinstance(sources[0], str) else ""
-        source_link = ""
+            if sources and isinstance(sources[0], str):
+                source_url = sources[0]
+        source_html = ""
         if source_url:
-            source_domain = source_url.split("//")[-1].split("/")[0].replace("www.", "")
-            source_link = f' <a href="{source_url}" style="color:#6366f1; text-decoration:none; font-size:12px;">{source_domain}</a>'
+            domain = source_url.split("//")[-1].split("/")[0].replace("www.", "")
+            source_html = f'<a href="{_esc(source_url)}" style="color:#6366f1; text-decoration:none; font-size:11px;">{_esc(domain)}</a>'
 
-        # Header row: Company - Tag - Link
-        header_html = f'<span style="font-weight:700; color:#0f172a; font-size:14px;">{item["company"]}</span>'
-        header_html += f' <span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors["bg"]}; color:{colors["fg"]}; text-transform:uppercase; letter-spacing:0.04em; vertical-align:middle;">{item["tag"]}</span>'
-        if source_link:
-            header_html += f' {source_link}'
+        # Date
+        date_html = ""
+        if item.get("date"):
+            try:
+                d = date.fromisoformat(item["date"])
+                date_html = f'<span style="font-size:11px; color:#94a3b8; margin-left:6px;">{d.strftime("%b %d")}</span>'
+            except ValueError:
+                pass
 
-        # Headline (one sentence)
-        headline_html = item.get("headline", "")
+        # Company + tag + source + date header line
+        header = f'<span style="font-weight:700; font-size:15px; color:#0f172a;">{_esc(item.get("company", ""))}</span>'
+        header += f' <span style="font-size:10px; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors["bg"]}; color:{colors["fg"]}; text-transform:uppercase; letter-spacing:0.04em; vertical-align:middle;">{_esc(item.get("tag", ""))}</span>'
+        if source_html:
+            header += f' {source_html}'
+        if date_html:
+            header += date_html
 
-        # Why paragraph
-        why_text = item.get("why", "")
-        window = item.get("window", "")
-        if window:
-            why_text += f" ({window})"
+        # Headline
+        headline = _esc(item.get("headline", ""))
 
-        # Scoop thinks section
-        scoop_html = ""
-        action = item.get("suggested_action", "")
-        opener = item.get("opening_line", "")
-        if action or opener:
-            scoop_parts = ""
-            if action:
-                scoop_parts += f'<p style="margin:0 0 4px; font-size:12px; color:#0f172a;">→ {action}</p>'
-            if opener:
-                scoop_parts += f'<p style="margin:0; font-size:12px; color:#64748b;">💬 <em>"{opener}"</em></p>'
-            scoop_html = f"""
-            <div style="margin-top:10px; padding:10px 12px; background:#f0f0ff; border-radius:6px; border-left:3px solid #6366f1;">
-              <p style="margin:0 0 6px; font-size:10px; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:0.08em;">Scoop thinks</p>
-              {scoop_parts}
+        # So what (new field) / fallback to why
+        so_what = _esc(item.get("so_what", item.get("why", "")))
+
+        # Contact card (if signal mentions a person)
+        contact_html = ""
+        contact_name = item.get("contact_name", "")
+        if contact_name:
+            c_title = _esc(item.get("contact_title", ""))
+            c_linkedin = item.get("contact_linkedin", "")
+            li_link = f'<a href="{_esc(c_linkedin)}" style="color:#0077B5; text-decoration:none; font-size:10px; font-weight:600;">LinkedIn</a>' if c_linkedin else ""
+            contact_html = f"""
+            <div style="margin-top:8px; padding:8px 10px; background:#f8fafb; border:1px solid #e2e8e6; border-radius:6px;">
+              <table cellpadding="0" cellspacing="0" width="100%"><tr>
+                <td>
+                  <p style="margin:0; font-size:12px; font-weight:700; color:#093B5F;">{_esc(contact_name)}</p>
+                  <p style="margin:1px 0 0; font-size:10px; color:#64748b;">{c_title}</p>
+                </td>
+                <td style="text-align:right; vertical-align:top;">{li_link}</td>
+              </tr></table>
+            </div>"""
+
+        # Ready-to-send message (new field) / fallback to opening_line
+        message = item.get("message", item.get("opening_line", ""))
+        message_html = ""
+        if message:
+            message_html = f"""
+            <div style="margin-top:8px; padding:8px 10px; background:#f0f0ff; border-radius:6px; border-left:2px solid #6366f1;">
+              <p style="margin:0 0 3px; font-size:9px; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:0.06em;">READY TO SEND</p>
+              <p style="margin:0; font-size:12px; color:#475569; line-height:1.5; font-style:italic;">"{_esc(message)}"</p>
             </div>"""
 
         items_html += f"""
-        <tr><td style="padding:16px 24px; border-bottom:1px solid #f1f5f9;">
-          <p style="margin:0 0 8px;">{header_html}</p>
-          <p style="margin:0 0 6px; font-size:13px; line-height:1.5; color:#0f172a;">{headline_html}</p>
-          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">{why_text}</p>
-          {scoop_html}
+        <tr><td style="padding:20px 24px; border-bottom:1px solid #f1f5f9;">
+          <p style="margin:0 0 8px;">{header}</p>
+          <p style="margin:0 0 6px; font-size:14px; line-height:1.5; color:#0f172a;">{headline}</p>
+          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">{so_what}</p>
+          {contact_html}
+          {message_html}
         </td></tr>"""
 
     company_count = len(user.get("companies", []))
-    user_name = user["email"].split("@")[0].title()
-    br = cfg["email"]["branding"]
-    footer = cfg["email"]["footer_text"]
+    user_name = user["email"].split("@")[0].replace(".", " ").title()
 
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
 <tr><td align="center" style="padding:24px 12px;">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:10px; overflow:hidden;">
-  <!-- Branded header -->
-  <tr><td style="padding:16px 24px; background:{br['header_bg']}; border-bottom:none;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(9,59,95,0.06);">
+
+  <!-- Header -->
+  <tr><td style="padding:20px 24px; background:{br['header_bg']};">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td><img src="{br['header_logo']}" alt="Solace" style="height:22px; display:inline-block; vertical-align:middle; filter:brightness(0) invert(1);"><span style="font-size:12px; font-weight:700; color:{br['badge_color']}; letter-spacing:0.08em; vertical-align:middle; margin-left:8px;">{br['badge_text']}</span></td>
-      <td style="text-align:right;"><span style="font-size:12px; color:rgba(255,255,255,0.6);">{today.strftime('%b %d, %Y')}</span></td>
+      <td><img src="{br['header_logo']}" alt="Solace" style="height:24px; vertical-align:middle; filter:brightness(0) invert(1);"><span style="font-size:13px; font-weight:700; color:{br['badge_color']}; letter-spacing:0.08em; vertical-align:middle; margin-left:10px;">{br['badge_text']}</span></td>
+      <td style="text-align:right;"><span style="font-size:12px; color:rgba(255,255,255,0.5);">{today.strftime('%b %d, %Y')}</span></td>
     </tr></table>
   </td></tr>
-  <tr><td style="padding:16px 24px 8px;">
-    <p style="margin:0; font-size:13px; color:#475569;">Hi {user_name}, {len(items)} signal{'s' if len(items) != 1 else ''} this week across your accounts.</p>
+
+  <!-- Greeting -->
+  <tr><td style="padding:20px 24px 12px;">
+    <p style="margin:0 0 4px; font-family:'Instrument Serif',Georgia,serif; font-size:24px; color:#093B5F;">Hi {user_name}</p>
+    <p style="margin:0; font-size:13px; color:#94a3b8;">{len(items)} signal{'s' if len(items) != 1 else ''} across {company_count} account{'s' if company_count != 1 else ''} this week</p>
   </td></tr>
+
   {items_html}
-  <tr><td style="padding:14px 24px; background:{br['header_bg']}; text-align:center;">
-    <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.5);">Tracking {company_count} account{'s' if company_count != 1 else ''} · Next digest: {next_monday.strftime('%b %d')} · {footer}</p>
+
+  <!-- Footer -->
+  <tr><td style="padding:20px 24px; background:{br['header_bg']}; text-align:center;">
+    <p style="margin:0 0 4px; font-size:11px; color:rgba(255,255,255,0.4);">Next digest: {next_monday.strftime('%b %d')} · {footer}</p>
+    <p style="margin:0; font-size:10px; color:rgba(255,255,255,0.25);">Manage your accounts at solace-scoop</p>
   </td></tr>
+
 </table>
 </td></tr></table>
 </body></html>"""
