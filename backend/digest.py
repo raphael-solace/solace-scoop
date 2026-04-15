@@ -278,7 +278,7 @@ CONTEXT: The reader is a Solace colleague who covers {company}. Solace is a peop
     "date": "<YYYY-MM-DD format. MUST be a real date from your sources. If unknown, empty string. NEVER guess.>",
     "headline": "<What happened, in one clear sentence with names, dates, concrete numbers. Write it like a news headline. Never use em dashes.>",
     "so_what": "<In 2-3 sentences, explain why this matters. Write like you're telling a friend over coffee: what changed, why it's interesting, and what conversation it opens. Be warm and specific to THIS event. Never generic.>",
-    "contact_name": "<ALWAYS try to find a real person at {company} to reach out to about this news. Search for: CTO, CIO, VP Engineering, Head of Integration, Head of Platform, Enterprise Architect, Chief Digital Officer, Head of IT at {company}. If the news mentions a specific person at {company} (appointed, promoted, quoted), use them. You MUST try hard to find someone. Only use empty string if you truly cannot find anyone.>",
+    "contact_name": "<ALWAYS try to find a real person at {company} to reach out to about this news. Search for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, Solution Architect, DSI (Directeur des Systemes d'Information), Architecte d'Entreprise at {company}. If the news mentions a specific person at {company} (appointed, promoted, quoted), use them. You MUST try hard to find someone. Only use empty string if you truly cannot find anyone.>",
     "contact_title": "<Their title at {company}. Empty string if unknown.>",
     "contact_linkedin": "<Their LinkedIn URL ONLY if you actually found it. Do NOT guess or construct URLs. Empty string if not found.>",
     "message": "<A warm, human, ready-to-send 2-sentence message for a LinkedIn DM or email. Write as if you genuinely care about this person and their work. First sentence: congratulate, acknowledge, or reference the news with warmth. Second sentence: gently connect it to how Solace could help (event-driven architecture, real-time data, event mesh, agent mesh) as a thought, not a pitch. Sound like a trusted advisor, not a salesperson. Examples of good tone: 'Congratulations on the new role! I'd love to hear how you're thinking about the integration landscape as you settle in.' or 'Great news about the partnership. If you're looking at connecting those new systems in real-time, happy to share how others have approached it with event mesh.' Never be pushy. Never say 'I sell' or 'our product'. Be the kind of person they'd want to grab coffee with.>",
@@ -323,7 +323,7 @@ Only report events AFTER {cutoff.isoformat()}. Include specific dates.
 Do NOT report background info as news. Do NOT fabricate dates.
 If nothing recent, return []. Return only valid JSON.
 
-IMPORTANT: For every signal, you MUST also search for a senior IT or technology leader at {company} to recommend as a contact. Search LinkedIn, press releases, and company announcements for: CTO, CIO, CDO, VP Engineering, VP IT, Head of Integration, Head of Platform, Chief Digital Officer, Enterprise Architect at {company}. Include their name, title, and LinkedIn URL if found.""",
+IMPORTANT: For every signal, you MUST also search for a senior IT or technology leader at {company} to recommend as a contact. Search LinkedIn, press releases, and company announcements for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, Solution Architect, DSI (Directeur des Systemes d'Information), Architecte d'Entreprise at {company}. Include their name, title, and LinkedIn URL if found.""",
         prompt=f"{prompt}\n\n{output_instruction}",
         provider="pplx",
     )
@@ -375,12 +375,14 @@ async def _enrich_contact(item: dict) -> dict:
 
 "{headline}"
 
-Search for real people at {company} on LinkedIn. Look for:
-- CTO, CIO, CDO, Chief Digital Officer
-- VP of Engineering, VP of IT, VP of Technology
-- Head of Integration, Head of Platform, Head of Data
-- Enterprise Architect, Chief Architect
-- Head of Digital Transformation
+Search for real people at {company} on LinkedIn. Look for these roles:
+- CTO, CIO, CDO, CISO, Chief Digital Officer, Chief Data Officer
+- VP of Engineering, VP of IT, VP of Technology, VP of Architecture
+- Head of Integration, Head of Platform, Head of Data, Head of Middleware
+- Enterprise Architect, Chief Architect, Solution Architect, Integration Architect
+- Head of Digital Transformation, Head of Cloud, Head of Infrastructure
+- Directeur des Systemes d'Information (DSI), Directeur Technique
+- Architecte d'Entreprise, Architecte SI, Responsable Integration
 
 Return JSON (no markdown):
 {{
