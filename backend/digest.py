@@ -360,6 +360,74 @@ IMPORTANT: For every signal, you MUST also search for a senior IT or technology 
     return valid
 
 
+async def _enrich_contact(item: dict) -> dict:
+    """For a signal missing a contact, run a dedicated search to find one."""
+    company = item.get("company", "")
+    headline = item.get("headline", "")
+    tag = item.get("tag", "")
+    if not company:
+        return item
+
+    try:
+        data = await _call_model(
+            system="You are a LinkedIn research specialist. Return only valid JSON.",
+            prompt=f"""Find ONE senior IT or technology leader at {company} who would be the right person to discuss this news with:
+
+"{headline}"
+
+Search for real people at {company} on LinkedIn. Look for:
+- CTO, CIO, CDO, Chief Digital Officer
+- VP of Engineering, VP of IT, VP of Technology
+- Head of Integration, Head of Platform, Head of Data
+- Enterprise Architect, Chief Architect
+- Head of Digital Transformation
+
+Return JSON (no markdown):
+{{
+  "name": "<full name of a real person you found>",
+  "title": "<their current title at {company}>",
+  "linkedin": "<their LinkedIn profile URL, ONLY if you actually found it, else empty string>"
+}}
+
+You MUST find someone. Search harder. Look at {company}'s leadership page, LinkedIn company page, recent press releases, conference speakers. If you cannot find the exact URL, still return the name and title.""",
+            max_tokens=200,
+            provider="pplx",
+        )
+        content = data["choices"][0]["message"]["content"].strip()
+        if content.startswith("```"):
+            content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        contact = json.loads(content)
+        if contact.get("name"):
+            item["contact_name"] = contact["name"]
+            item["contact_title"] = contact.get("title", "")
+            item["contact_linkedin"] = contact.get("linkedin", "")
+    except Exception as e:
+        pass  # keep the signal, just without a contact
+
+    return item
+
+
+async def _enrich_all_contacts(items: list[dict]) -> list[dict]:
+    """Enrich signals that are missing contacts with a dedicated search."""
+    tasks = []
+    for item in items:
+        if not item.get("contact_name"):
+            tasks.append(_enrich_contact(item))
+        else:
+            tasks.append(asyncio.coroutine(lambda i=item: i)() if False else None)
+
+    # Run enrichment for items missing contacts, with pacing
+    for item in items:
+        if not item.get("contact_name"):
+            print(f"    [contact search] {item.get('company', '?')}...")
+            await _enrich_contact(item)
+            await asyncio.sleep(1)  # pace to avoid rate limits
+
+    found = sum(1 for i in items if i.get("contact_name"))
+    print(f"    [contacts] {found}/{len(items)} signals have contacts")
+    return items
+
+
 async def _research_company(
     company: str,
     seller_context: dict,
@@ -532,6 +600,9 @@ async def generate_signals(
     print(f"  [ranking] {len(all_items)} raw signals")
     ranked = await _rank_signals(all_items, seller_context)
     print(f"  [ranked] {len(ranked)} signals")
+
+    # Enrich signals missing contacts with dedicated search
+    ranked = await _enrich_all_contacts(ranked)
 
     return ranked
 
