@@ -45,3 +45,5 @@ node_modules/
 *.png
 *.csv
 bearer.md
+backup/
+supabase/
