@@ -183,7 +183,7 @@ def render_digest(user: dict, items: list[dict]) -> str:
         source_html = ""
         if source_url:
             domain = source_url.split("//")[-1].split("/")[0].replace("www.", "")
-            source_html = f'<a href="{_esc(source_url)}" style="color:#6366f1; text-decoration:none; font-size:11px;">{_esc(domain)}</a>'
+            source_html = f'<a href="{_esc(source_url)}" style="color:#6366f1; text-decoration:underline; font-size:11px;">{_esc(domain)}</a>'
 
         # Date
         date_html = ""
@@ -194,16 +194,22 @@ def render_digest(user: dict, items: list[dict]) -> str:
             except ValueError:
                 pass
 
-        # Company + tag + source + date header line
+        # Company + tag + date header line
         header = f'<span style="font-weight:700; font-size:15px; color:#0f172a;">{_esc(item.get("company", ""))}</span>'
         header += f' <span style="font-size:10px; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors["bg"]}; color:{colors["fg"]}; text-transform:uppercase; letter-spacing:0.04em; vertical-align:middle;">{_esc(item.get("tag", ""))}</span>'
-        if source_html:
-            header += f' {source_html}'
         if date_html:
             header += date_html
 
         # Headline
         headline = _esc(item.get("headline", ""))
+
+        # Source link on its own line (survives forwarding)
+        source_line = ""
+        if source_url:
+            src_short = source_url.replace("https://www.", "").replace("https://", "")
+            if len(src_short) > 60:
+                src_short = src_short[:57] + "..."
+            source_line = f'<p style="margin:4px 0 0;"><a href="{_esc(source_url)}" style="color:#6366f1; text-decoration:underline; font-size:10px;">{_esc(src_short)}</a></p>'
 
         # So what (new field) / fallback to why
         so_what = _esc(item.get("so_what", item.get("why", "")))
@@ -222,17 +228,16 @@ def render_digest(user: dict, items: list[dict]) -> str:
                 search_q = urllib.parse.quote_plus(f"{contact_name} {item.get('company', '')}")
                 c_linkedin = f"https://www.linkedin.com/search/results/people/?keywords={search_q}"
 
-            li_link = f'<a href="{_esc(c_linkedin)}" style="color:#0077B5; text-decoration:none; font-size:11px; font-weight:600;">LinkedIn &rarr;</a>'
+            # Show short LinkedIn URL as visible text so it survives email forwarding
+            li_short = c_linkedin.replace("https://www.", "").replace("https://", "")
+            if len(li_short) > 50:
+                li_short = li_short[:47] + "..."
 
             contact_html = f"""
             <div style="margin-top:8px; padding:8px 12px; background:#f8fafb; border:1px solid #e2e8e6; border-radius:6px;">
-              <table cellpadding="0" cellspacing="0" width="100%"><tr>
-                <td>
-                  <p style="margin:0; font-size:12px; font-weight:700; color:#093B5F;">{_esc(contact_name)}</p>
-                  <p style="margin:1px 0 0; font-size:10px; color:#64748b;">{c_title} at {c_company}</p>
-                </td>
-                <td style="text-align:right; vertical-align:middle;">{li_link}</td>
-              </tr></table>
+              <p style="margin:0; font-size:12px; font-weight:700; color:#093B5F;">{_esc(contact_name)}</p>
+              <p style="margin:1px 0 0; font-size:10px; color:#64748b;">{c_title} at {c_company}</p>
+              <p style="margin:4px 0 0;"><a href="{_esc(c_linkedin)}" style="color:#0077B5; text-decoration:underline; font-size:10px;">{_esc(li_short)}</a></p>
             </div>"""
 
         # Ready-to-send message (new field) / fallback to opening_line
@@ -248,8 +253,9 @@ def render_digest(user: dict, items: list[dict]) -> str:
         items_html += f"""
         <tr><td style="padding:20px 24px; border-bottom:1px solid #f1f5f9;">
           <p style="margin:0 0 8px;">{header}</p>
-          <p style="margin:0 0 6px; font-size:14px; line-height:1.5; color:#0f172a;">{headline}</p>
-          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">{so_what}</p>
+          <p style="margin:0 0 4px; font-size:14px; line-height:1.5; color:#0f172a;">{headline}</p>
+          {source_line}
+          <p style="margin:6px 0 0; font-size:12px; line-height:1.6; color:#64748b;">{so_what}</p>
           {contact_html}
           {message_html}
         </td></tr>"""
