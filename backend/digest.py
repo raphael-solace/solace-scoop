@@ -275,7 +275,7 @@ CONTEXT: The reader is a Solace colleague who covers {company}. Solace is a peop
   {{
     "company": "{company}",
     "tag": "<one of: {all_tags}>",
-    "date": "<YYYY-MM-DD format. MUST be a real date from your sources. If unknown, empty string. NEVER guess.>",
+    "date": "<YYYY-MM-DD of when the EVENT happened (not when the article was published). MUST be after {cutoff}. If you cannot determine the event date, do NOT include this signal.>",
     "headline": "<What happened, in one clear sentence with names, dates, concrete numbers. Write it like a news headline. Never use em dashes.>",
     "so_what": "<In 2-3 sentences, explain why this matters. Write like you're telling a friend over coffee: what changed, why it's interesting, and what conversation it opens. Be warm and specific to THIS event. Never generic.>",
     "contact_name": "<ALWAYS try to find a real person at {company} to reach out to about this news. Search for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, Solution Architect, DSI (Directeur des Systemes d'Information), Architecte d'Entreprise at {company}. If the news mentions a specific person at {company} (appointed, promoted, quoted), use them. You MUST try hard to find someone. Only use empty string if you truly cannot find anyone.>",
@@ -314,16 +314,24 @@ async def _run_company_query(
     }
     prompt = query_type["prompt"].format(**ctx)
     output_instruction = SIGNAL_OUTPUT_INSTRUCTION.format(
-        company=company, all_tags=ALL_TAGS,
+        company=company, all_tags=ALL_TAGS, cutoff=cutoff.isoformat(),
     )
 
     data = await _call_model(
         system=f"""You are a B2B sales intelligence analyst. Today is {today.isoformat()}.
-Only report events AFTER {cutoff.isoformat()}. Include specific dates.
-Do NOT report background info as news. Do NOT fabricate dates.
-If nothing recent, return []. Return only valid JSON.
 
-IMPORTANT: For every signal, you MUST also search for a senior IT or technology leader at {company} to recommend as a contact. Search LinkedIn, press releases, and company announcements for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, Solution Architect, DSI (Directeur des Systemes d'Information), Architecte d'Entreprise at {company}. Include their name, title, and LinkedIn URL if found.""",
+STRICT DATE RULE: Only report events where the EVENT ITSELF happened after {cutoff.isoformat()}.
+- The EVENT date is when something actually occurred (appointment started, deal signed, product launched, results announced).
+- The ARTICLE date is when a news outlet wrote about it. These are NOT the same thing.
+- Example: An article published in February 2026 about someone who took a role in December 2025 is OLD NEWS. Do not include it.
+- If the event happened before {cutoff.isoformat()}, do NOT include it even if the article is recent.
+- Every signal MUST include the EVENT date in YYYY-MM-DD format. If you cannot determine when the event happened, do NOT include the signal.
+
+Do NOT report background info as news. Do NOT fabricate dates.
+If nothing genuinely happened in the last 14 days, return []. That is the correct answer.
+Return only valid JSON.
+
+IMPORTANT: For every signal, also search for a senior IT/tech leader at {company} to recommend as a contact. Search for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, Solution Architect, DSI (Directeur des Systemes d'Information), Architecte d'Entreprise at {company}. Include their name, title, and LinkedIn URL if found.""",
         prompt=f"{prompt}\n\n{output_instruction}",
         provider="pplx",
     )
@@ -342,20 +350,29 @@ IMPORTANT: For every signal, you MUST also search for a senior IT or technology 
         if not item.get("sources"):
             item["sources"] = sources
 
-    # Hard date filter: drop signals with parseable dates older than cutoff
+    # Hard date filter: STRICT — drop signals with no date or date older than cutoff
     valid = []
+    dropped_no_date = 0
+    dropped_old = 0
     for item in items:
         if not item.get("headline"):
             continue
         d = item.get("date", "")
-        if d:
-            try:
-                signal_date = date.fromisoformat(d)
-                if signal_date < cutoff:
-                    continue  # too old
-            except ValueError:
-                pass  # unparseable date, keep it
+        if not d:
+            dropped_no_date += 1
+            continue  # no date = not verifiably recent = drop
+        try:
+            signal_date = date.fromisoformat(d)
+            if signal_date < cutoff:
+                dropped_old += 1
+                continue  # event happened before the window
+        except ValueError:
+            dropped_no_date += 1
+            continue  # unparseable date = drop
         valid.append(item)
+
+    if dropped_no_date or dropped_old:
+        print(f"    [date-filter] Dropped {dropped_old} old + {dropped_no_date} undated signals")
 
     return valid
 
