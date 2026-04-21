@@ -269,32 +269,42 @@ If nothing found, return an empty array.""",
 
 SIGNAL_OUTPUT_INSTRUCTION = """Return a JSON array of signals (0 to 3 items). No markdown, no code fences.
 
-CONTEXT: The reader is a Solace colleague who covers {company}. Solace is a people-first company that values trust, humility, and genuine human connection. The reader wants to be genuinely helpful to their contacts at {company}, not push products. They need to know what's happening so they can have real, relevant conversations.
+CONTEXT: The reader is a Solace colleague who covers {company}. Solace is a people-first company that values trust, humility, and genuine human connection. The reader wants 2-3 high-confidence signals they can act on, not 8 where they filter out 5.
+
+SOLACE PROOF POINTS BY VERTICAL (weave the relevant one into your message naturally):
+- Aviation/Transport: "Solace powers FAA SWIM for real-time flight data across US airspace"
+- Financial Services/Banking: "60% of the world's largest investment banks use Solace for real-time trading"
+- Manufacturing/CPG: "Danone connects 100+ factories via Solace event mesh for real-time production data"
+- Retail: "Major retailers use Solace to connect POS, inventory, and e-commerce in real-time"
+- Telecom: "Solace processes 1.5M connected vehicles in Singapore via real-time event streaming"
+- Healthcare/Pharma: "Roche uses Solace for real-time lab data integration across global sites"
+- Energy/Utilities: "Solace enables real-time grid monitoring and smart meter data processing"
+- Defense/Government: "NATO uses Solace for secure real-time C2 data distribution"
 
 [
   {{
     "company": "{company}",
     "tag": "<one of: {all_tags}>",
     "date": "<YYYY-MM-DD of when the EVENT happened (not when the article was published). MUST be after {cutoff}. If you cannot determine the event date, do NOT include this signal.>",
-    "headline": "<What happened, in one clear sentence with names, dates, concrete numbers. Write it like a news headline. Never use em dashes.>",
-    "so_what": "<In 2-3 sentences, explain why this matters. Write like you're telling a friend over coffee: what changed, why it's interesting, and what conversation it opens. Be warm and specific to THIS event. Never generic.>",
-    "contact_name": "<ALWAYS try to find a real person at {company} to reach out to about this news. Search for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, Solution Architect, DSI (Directeur des Systemes d'Information), Architecte d'Entreprise at {company}. If the news mentions a specific person at {company} (appointed, promoted, quoted), use them. You MUST try hard to find someone. Only use empty string if you truly cannot find anyone.>",
-    "contact_title": "<Their title at {company}. Empty string if unknown.>",
-    "contact_linkedin": "<Their LinkedIn URL ONLY if you actually found it. Do NOT guess or construct URLs. Empty string if not found.>",
-    "message": "<A warm, human, ready-to-send 2-sentence message for a LinkedIn DM or email. Write as if you genuinely care about this person and their work. First sentence: congratulate, acknowledge, or reference the news with warmth. Second sentence: gently connect it to how Solace could help (event-driven architecture, real-time data, event mesh, agent mesh) as a thought, not a pitch. Sound like a trusted advisor, not a salesperson. Examples of good tone: 'Congratulations on the new role! I'd love to hear how you're thinking about the integration landscape as you settle in.' or 'Great news about the partnership. If you're looking at connecting those new systems in real-time, happy to share how others have approached it with event mesh.' Never be pushy. Never say 'I sell' or 'our product'. Be the kind of person they'd want to grab coffee with.>",
+    "headline": "<What happened, in one clear sentence with names, dates, concrete numbers. Never use em dashes.>",
+    "signal_strength": "<integer 1-5. 5=crisis/RFP/funded project with deadline. 4=new leadership in buying role or major platform decision. 3=strategic partnership or M&A affecting IT. 2=earnings commentary or hiring patterns. 1=PR announcement or generic news.>",
+    "persona_fit": "<integer 1-5. 5=CIO/CTO/Head of Architecture/Head of Integration (direct buyer). 4=VP Engineering/Enterprise Architect/Head of Platform. 3=CDO/Head of Data/Head of Cloud. 2=CFO/COO/business leader. 1=marketing/brand/HR or no IT relevance.>",
+    "so_what": "<In 2-3 sentences, explain why this matters. Write like telling a friend over coffee. Be warm and specific to THIS event. Never generic.>",
+    "contact_name": "<ALWAYS find a real person at {company}. Search for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, DSI, Architecte d'Entreprise. You MUST try hard. Only empty string if truly impossible.>",
+    "contact_title": "<Their title at {company}.>",
+    "contact_linkedin": "<LinkedIn URL ONLY if actually found. Do NOT guess.>",
+    "message": "<Warm, human, 2-sentence message for LinkedIn DM. First sentence: acknowledge the news with warmth. Second sentence: connect to Solace using a relevant proof point from the list above for {company}'s vertical. Sound like a trusted advisor sharing an insight. Example: 'Congrats on the new AI initiative. We helped Danone connect 100+ factories with event mesh for exactly this kind of real-time data flow, happy to share what worked.' Never be pushy.>",
     "risk_or_opportunity": "<opportunity | risk | both>",
-    "sources": ["<source URLs from your research>"]
+    "sources": ["<source URLs>"]
   }}
 ]
 
 RULES:
-- Every signal MUST have a specific name, date, or number. No filler.
-- ALWAYS try to find a contact_name. Search for leaders at {company}. This is critical.
-- The "message" must be warm, genuine, and human. Think trusted advisor, not salesperson.
-- Write "so_what" like you're telling a colleague something interesting, not writing a report.
-- Return [] if nothing concrete found. Never invent signals.
-- Never use em dashes (--) in any field.
-- Quality over quantity: one great signal beats three mediocre ones."""
+- Only include signals with signal_strength >= 3. Skip PR fluff and generic news.
+- ALWAYS find a contact_name with persona_fit >= 3 (IT/architecture buyer).
+- The "message" must include a relevant Solace proof point for {company}'s industry.
+- Return [] if nothing high-quality found. That is the correct answer.
+- Never use em dashes (--). Never invent signals. Quality over quantity."""
 
 
 async def _run_company_query(
@@ -468,77 +478,76 @@ async def _research_company(
     return all_items
 
 
-# -- Rank signals ------------------------------
+# -- Score-based ranking (deterministic, no LLM call) --
 
-async def _rank_signals(
-    items: list[dict],
-    seller_context: dict,
-) -> list[dict]:
-    n = cfg["digest"]["signals_per_email"]
-    if len(items) <= 3:
-        return items
+def _rank_signals(items: list[dict]) -> list[dict]:
+    """Rank signals by score, filter by quality threshold, enforce diversity."""
+    max_signals = cfg["digest"].get("max_signals_per_email", 5)
+    min_strength = cfg["digest"].get("min_signal_strength", 3)
+    min_persona = cfg["digest"].get("min_persona_fit", 3)
+    max_risk = 2
+    max_per_company = 2
 
-    signals_json = json.dumps(
-        [{"i": i, "company": item["company"], "tag": item.get("tag", ""),
-          "headline": item["headline"], "urgency": item.get("urgency", ""),
-          "risk_or_opportunity": item.get("risk_or_opportunity", "opportunity")}
-         for i, item in enumerate(items)],
-        indent=2,
-    )
+    def _score(item):
+        try:
+            strength = int(item.get("signal_strength", 1))
+        except (ValueError, TypeError):
+            strength = 1
+        try:
+            persona = int(item.get("persona_fit", 1))
+        except (ValueError, TypeError):
+            persona = 1
+        item["_strength"] = strength
+        item["_persona"] = persona
+        return strength * 2 + persona
 
-    data = await _call_model(
-        system="You are a B2B sales intelligence curator. Return only valid JSON.",
-        prompt=f"""Select the best signals for a salesperson's weekly account intelligence digest.
-
-SELECTION CRITERIA (in order of importance):
-1. DIVERSITY: include a mix of signal types. Do NOT select more than 3 risk/layoff signals. A good digest has people moves, partnerships, strategic news, AND risk signals, not just one type.
-2. ACTIONABILITY: prefer signals the salesperson can reference in a conversation or act on this week.
-3. FRESHNESS: prefer signals with specific recent dates over vague ones.
-4. COMPANY SPREAD: try to cover different companies, not 5 signals from the same company.
-5. CONFIDENCE: prefer HIGH confidence signals with named sources.
-
-{signals_json}
-
-Return a JSON array of the "i" values of the best {n}, in priority order: [0, 3, 7, ...]""",
-        max_tokens=cfg["perplexity"]["ranking_max_tokens"],
-        provider="pplx",
-    )
-
-    content = data["choices"][0]["message"]["content"]
-    try:
-        indices = _parse_json(content)
-        if isinstance(indices, list):
-            ranked = []
-            seen = set()
-            for idx in indices:
-                if isinstance(idx, int) and 0 <= idx < len(items):
-                    key = items[idx]["headline"][:60]
-                    if key not in seen:
-                        seen.add(key)
-                        ranked.append(items[idx])
-            result = ranked[:n] if ranked else items[:n]
-            return _cap_risk_signals(result)
-    except (json.JSONDecodeError, ValueError):
-        pass
-
-    return _cap_risk_signals(items[:n])
-
-
-def _cap_risk_signals(items: list[dict], max_risk: int = 3) -> list[dict]:
-    """Ensure no more than max_risk risk/layoff signals in a digest."""
-    result = []
-    risk_count = 0
-    deferred_non_risk = []
-
+    # Score and sort
     for item in items:
+        item["_composite"] = _score(item)
+    items.sort(key=lambda x: x["_composite"], reverse=True)
+
+    # Filter by quality threshold
+    qualified = [i for i in items if i["_strength"] >= min_strength and i["_persona"] >= min_persona]
+
+    # If too few qualify, relax strength to 2
+    if len(qualified) < 2:
+        qualified = [i for i in items if i["_strength"] >= (min_strength - 1) and i["_persona"] >= (min_persona - 1)]
+
+    # Diversity caps
+    result = []
+    company_count = {}
+    risk_count = 0
+    seen_headlines = set()
+
+    for item in qualified:
+        company = item.get("company", "")
         is_risk = item.get("risk_or_opportunity") in ("risk", "both")
+        headline_key = item.get("headline", "")[:60]
+
+        # Dedup within batch
+        if headline_key in seen_headlines:
+            continue
+        # Max per company
+        if company_count.get(company, 0) >= max_per_company:
+            continue
+        # Max risk
+        if is_risk and risk_count >= max_risk:
+            continue
+
+        seen_headlines.add(headline_key)
+        company_count[company] = company_count.get(company, 0) + 1
         if is_risk:
-            if risk_count < max_risk:
-                result.append(item)
-                risk_count += 1
-            # else skip
-        else:
-            result.append(item)
+            risk_count += 1
+        result.append(item)
+
+        if len(result) >= max_signals:
+            break
+
+    # Clean up internal scoring fields
+    for item in result:
+        item.pop("_composite", None)
+        item.pop("_strength", None)
+        item.pop("_persona", None)
 
     return result
 
@@ -617,7 +626,7 @@ async def generate_signals(
         return []
 
     print(f"  [ranking] {len(all_items)} raw signals")
-    ranked = await _rank_signals(all_items, seller_context)
+    ranked = _rank_signals(all_items)
     print(f"  [ranked] {len(ranked)} signals")
 
     # Enrich signals missing contacts with dedicated search

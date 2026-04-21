@@ -194,9 +194,24 @@ def render_digest(user: dict, items: list[dict]) -> str:
             except ValueError:
                 pass
 
-        # Company + tag + date header line
+        # Signal strength indicator
+        strength = item.get("signal_strength", "")
+        strength_dot = ""
+        try:
+            s = int(strength)
+            if s >= 5:
+                strength_dot = '<span style="font-size:9px; color:#ef4444; vertical-align:middle; margin-left:4px;" title="High impact">&#9679;&#9679;&#9679;</span>'
+            elif s >= 4:
+                strength_dot = '<span style="font-size:9px; color:#f59e0b; vertical-align:middle; margin-left:4px;" title="Notable">&#9679;&#9679;</span>'
+            elif s >= 3:
+                strength_dot = '<span style="font-size:9px; color:#10b981; vertical-align:middle; margin-left:4px;" title="Relevant">&#9679;</span>'
+        except (ValueError, TypeError):
+            pass
+
+        # Company + tag + strength + date header line
         header = f'<span style="font-weight:700; font-size:15px; color:#0f172a;">{_esc(item.get("company", ""))}</span>'
         header += f' <span style="font-size:10px; font-weight:600; padding:2px 6px; border-radius:100px; background:{colors["bg"]}; color:{colors["fg"]}; text-transform:uppercase; letter-spacing:0.04em; vertical-align:middle;">{_esc(item.get("tag", ""))}</span>'
+        header += strength_dot
         if date_html:
             header += date_html
 

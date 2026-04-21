@@ -4,7 +4,9 @@
 
 digest:
   companies_per_user: 20
-  signals_per_email: 10
+  max_signals_per_email: 5        # quality over quantity (was 10)
+  min_signal_strength: 3          # 5=crisis/RFP, 4=new leader, 3=partnership, 2=earnings, 1=PR fluff
+  min_persona_fit: 3              # 5=CIO/CTO, 4=VP Eng, 3=CDO, 2=CFO, 1=no IT relevance
   news_recency_days: 14
   pace_between_companies_sec: 3
   pace_between_users_sec: 30
