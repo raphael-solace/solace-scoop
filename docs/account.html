@@ -103,6 +103,10 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
           My Contacts
         </button>
+        <button class="dash__tab" data-tab="chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Ask Scoop
+        </button>
         <button class="dash__tab" data-tab="accounts">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           My Accounts
@@ -146,6 +150,29 @@
             </button>
           </form>
           <div id="people-ok" class="dash__toast" hidden>Contact added. Their activity will appear in your next digest.</div>
+        </div>
+      </div>
+
+      <!-- Panel: Chat -->
+      <div class="dash__panel" id="panel-chat" hidden>
+        <div class="chat">
+          <div class="chat__messages" id="chat-messages">
+            <div class="chat__msg chat__msg--bot">
+              <p>Hi! I'm Scoop. Ask me anything about your accounts, recent news, or help preparing for a meeting. For example:</p>
+              <ul style="margin:8px 0 0; padding-left:1.25rem; font-size:0.8125rem; color:var(--gray-600);">
+                <li>"What's happening at Danone this week?"</li>
+                <li>"Help me prep for a call with BNP Paribas tomorrow"</li>
+                <li>"Who should I talk to at Schneider Electric about their AI initiative?"</li>
+                <li>"Tell me more about the IAG MuleSoft deployment"</li>
+              </ul>
+            </div>
+          </div>
+          <form class="chat__input-bar" id="chat-form">
+            <input class="chat__input" type="text" id="chat-input" placeholder="Ask about your accounts..." autocomplete="off">
+            <button type="submit" class="chat__send" id="chat-send">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </form>
         </div>
       </div>
 

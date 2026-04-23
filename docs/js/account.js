@@ -258,6 +258,57 @@
     .catch(function(e) { alert('Failed: ' + e.message); });
   });
 
+  // ── Chat ────────────────────────────
+  var chatMessages = $('chat-messages');
+  var chatForm = $('chat-form');
+  var chatInput = $('chat-input');
+  var chatSend = $('chat-send');
+
+  function addMsg(text, type) {
+    var div = document.createElement('div');
+    div.className = 'chat__msg chat__msg--' + type;
+    div.innerHTML = '<p>' + (type === 'user' ? esc(text) : text) + '</p>';
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+  }
+
+  chatForm.addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    var q = chatInput.value.trim();
+    if (!q) return;
+
+    addMsg(q, 'user');
+    chatInput.value = '';
+    chatSend.disabled = true;
+    var loading = addMsg('Researching...', 'loading');
+
+    // Build context from user's accounts and recent signals
+    var email = localStorage.getItem('scoop_email') || '';
+    var accounts = ($('profile-companies').value || '').split('\n').filter(Boolean).join(', ');
+
+    fetch(API + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q, email: email, accounts: accounts })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      loading.remove();
+      chatSend.disabled = false;
+      if (d.answer) {
+        addMsg(d.answer, 'bot');
+      } else if (d.error) {
+        addMsg('Sorry, I couldn\'t process that. ' + d.error, 'bot');
+      }
+    })
+    .catch(function() {
+      loading.remove();
+      chatSend.disabled = false;
+      addMsg('Could not connect to Scoop. Please try again.', 'bot');
+    });
+  });
+
   // ── Sign out ────────────────────────
   $('btn-signout').addEventListener('click', function() {
     localStorage.removeItem('scoop_token'); localStorage.removeItem('scoop_email');

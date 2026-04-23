@@ -94,6 +94,12 @@ class DigestRequest(BaseModel):
     api_secret: str
 
 
+class ChatRequest(BaseModel):
+    question: str
+    email: str = ""
+    accounts: str = ""
+
+
 class OTPRequest(BaseModel):
     email: EmailStr
 
@@ -209,3 +215,51 @@ async def verify_session(req: VerifySessionRequest):
     from db import check_session
     valid = await check_session(req.email, req.token)
     return {"valid": valid}
+
+
+# -- Chat --------------------------------------
+
+@app.post("/api/chat")
+async def chat(req: ChatRequest):
+    """Answer questions about accounts using Perplexity web search."""
+    if not req.question or len(req.question) > 1000:
+        return {"error": "Question too long or empty"}
+
+    from digest import _call_model
+
+    # Build context from user's accounts
+    accounts_ctx = ""
+    if req.accounts:
+        accounts_ctx = f"\nThe user covers these accounts: {req.accounts}."
+
+    # Get recent signals for context
+    signals_ctx = ""
+    if req.email:
+        try:
+            from db import get_user_by_email, get_last_digest
+            user = await get_user_by_email(req.email)
+            if user:
+                digest = await get_last_digest(user["id"])
+                if digest and digest.get("items"):
+                    headlines = [f"- {i['company']}: {i['headline']}" for i in digest["items"][:5] if i.get("headline")]
+                    if headlines:
+                        signals_ctx = "\n\nRecent signals from their last digest:\n" + "\n".join(headlines)
+        except Exception:
+            pass
+
+    try:
+        data = await _call_model(
+            system=f"""You are Scoop, a helpful sales intelligence assistant for Solace colleagues.
+You help salespeople prepare for calls, understand their accounts, and find relevant information.
+Be warm, concise, and actionable. Use markdown for formatting.{accounts_ctx}{signals_ctx}
+
+Solace sells PubSub+ Event Broker, Event Portal, and Agent Mesh for event-driven architecture.
+When relevant, connect insights to how Solace could help, but don't force it.""",
+            prompt=req.question,
+            max_tokens=800,
+            provider="pplx",
+        )
+        answer = data["choices"][0]["message"]["content"]
+        return {"answer": answer}
+    except Exception as e:
+        return {"error": str(e)}
