@@ -98,6 +98,7 @@
 
       loadNews(u.id, cos);
       loadPeople(u.id);
+      buildMeetingButtons();
       show('dashboard');
     })
     .catch(function() { localStorage.clear(); show('auth-email'); });
@@ -264,26 +265,57 @@
   var chatInput = $('chat-input');
   var chatSend = $('chat-send');
 
+  // Simple markdown to HTML
+  function md(text) {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code style="background:#f1f5f4; padding:1px 4px; border-radius:3px; font-size:0.8em;">$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:#6366f1; text-decoration:underline;">$1</a>')
+      .replace(/^### (.+)$/gm, '<strong style="font-size:0.9375rem; color:var(--navy); display:block; margin:8px 0 4px;">$1</strong>')
+      .replace(/^## (.+)$/gm, '<strong style="font-size:1rem; color:var(--navy); display:block; margin:10px 0 4px;">$1</strong>')
+      .replace(/^- (.+)$/gm, '<span style="display:block; padding-left:1rem; position:relative;">&#8226; $1</span>')
+      .replace(/\n\n/g, '</p><p style="margin:6px 0;">')
+      .replace(/\n/g, '<br>');
+  }
+
   function addMsg(text, type) {
     var div = document.createElement('div');
     div.className = 'chat__msg chat__msg--' + type;
-    div.innerHTML = '<p>' + (type === 'user' ? esc(text) : text) + '</p>';
+    if (type === 'user') {
+      div.innerHTML = '<p>' + esc(text) + '</p>';
+    } else if (type === 'loading') {
+      div.innerHTML = '<p style="color:var(--gray-400);"><em>' + text + '</em></p>';
+    } else {
+      div.innerHTML = '<p style="margin:0;">' + md(text) + '</p>';
+    }
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     return div;
   }
 
-  chatForm.addEventListener('submit', function(ev) {
-    ev.preventDefault();
-    var q = chatInput.value.trim();
-    if (!q) return;
+  function addSources(sources) {
+    if (!sources || !sources.length) return;
+    var div = document.createElement('div');
+    div.className = 'chat__msg chat__msg--bot';
+    var html = '<p style="margin:0 0 4px; font-size:0.6875rem; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.05em;">Sources</p>';
+    sources.forEach(function(s) {
+      if (typeof s === 'string' && s.startsWith('http')) {
+        var domain = s.split('//')[1]; if (domain) domain = domain.split('/')[0].replace('www.','');
+        html += '<a href="' + esc(s) + '" target="_blank" style="display:inline-block; margin:2px 4px 2px 0; padding:2px 8px; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:100px; font-size:0.6875rem; color:#6366f1; text-decoration:none;">' + esc(domain) + '</a>';
+      }
+    });
+    div.innerHTML = html;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
 
+  function sendChat(q) {
     addMsg(q, 'user');
     chatInput.value = '';
     chatSend.disabled = true;
     var loading = addMsg('Researching...', 'loading');
 
-    // Build context from user's accounts and recent signals
     var email = localStorage.getItem('scoop_email') || '';
     var accounts = ($('profile-companies').value || '').split('\n').filter(Boolean).join(', ');
 
@@ -298,6 +330,7 @@
       chatSend.disabled = false;
       if (d.answer) {
         addMsg(d.answer, 'bot');
+        if (d.sources) addSources(d.sources);
       } else if (d.error) {
         addMsg('Sorry, I couldn\'t process that. ' + d.error, 'bot');
       }
@@ -307,7 +340,32 @@
       chatSend.disabled = false;
       addMsg('Could not connect to Scoop. Please try again.', 'bot');
     });
+  }
+
+  chatForm.addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    var q = chatInput.value.trim();
+    if (!q) return;
+    sendChat(q);
   });
+
+  // Meeting prep quick buttons (populated from user's accounts)
+  function buildMeetingButtons() {
+    var companies = ($('profile-companies').value || '').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+    var container = $('chat-quick-buttons');
+    if (!container || !companies.length) return;
+    var html = '<p style="font-size:0.6875rem; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.05em; margin:0 0 6px;">Quick meeting prep</p>';
+    companies.slice(0, 8).forEach(function(co) {
+      html += '<button class="chat__quick-btn" data-company="' + esc(co) + '">' + esc(co) + '</button>';
+    });
+    container.innerHTML = html;
+
+    container.querySelectorAll('.chat__quick-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        sendChat('I have a meeting with ' + btn.dataset.company + ' tomorrow. Give me a quick prep: recent news, key contacts to mention, talking points, and anything I should watch out for.');
+      });
+    });
+  }
 
   // ── Sign out ────────────────────────
   $('btn-signout').addEventListener('click', function() {

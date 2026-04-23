@@ -260,6 +260,7 @@ When relevant, connect insights to how Solace could help, but don't force it."""
             provider="pplx",
         )
         answer = data["choices"][0]["message"]["content"]
-        return {"answer": answer}
+        sources = data.get("citations", [])
+        return {"answer": answer, "sources": sources}
     except Exception as e:
         return {"error": str(e)}
