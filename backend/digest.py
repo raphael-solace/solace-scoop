@@ -290,7 +290,7 @@ SOLACE PROOF POINTS BY VERTICAL (weave the relevant one into your message natura
     "signal_strength": "<integer 1-5. 5=crisis/RFP/funded project with deadline. 4=new leadership in buying role or major platform decision. 3=strategic partnership or M&A affecting IT. 2=earnings commentary or hiring patterns. 1=PR announcement or generic news.>",
     "persona_fit": "<integer 1-5. 5=CIO/CTO/Head of Architecture/Head of Integration (direct buyer). 4=VP Engineering/Enterprise Architect/Head of Platform. 3=CDO/Head of Data/Head of Cloud. 2=CFO/COO/business leader. 1=marketing/brand/HR or no IT relevance.>",
     "so_what": "<In 2-3 sentences, explain why this matters. Write like telling a friend over coffee. Be warm and specific to THIS event. Never generic.>",
-    "contact_name": "<ALWAYS find a real person at {company}. Search for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, DSI, Architecte d'Entreprise. You MUST try hard. Only empty string if truly impossible.>",
+    "contact_name": "<If the news article NAMES a specific person at {company} (appointed, promoted, quoted, mentioned), use them. Otherwise leave empty. NEVER invent or guess a name. An empty contact is better than a wrong one.>",
     "contact_title": "<Their title at {company}.>",
     "contact_linkedin": "<LinkedIn URL ONLY if actually found. Do NOT guess.>",
     "message": "<Warm, human, 2-sentence message for LinkedIn DM. First sentence: acknowledge the news with warmth. Second sentence: connect to Solace using a relevant proof point from the list above for {company}'s vertical. Sound like a trusted advisor sharing an insight. Example: 'Congrats on the new AI initiative. We helped Danone connect 100+ factories with event mesh for exactly this kind of real-time data flow, happy to share what worked.' Never be pushy.>",
@@ -341,7 +341,7 @@ Do NOT report background info as news. Do NOT fabricate dates.
 If nothing genuinely happened in the last 14 days, return []. That is the correct answer.
 Return only valid JSON.
 
-IMPORTANT: For every signal, also search for a senior IT/tech leader at {company} to recommend as a contact. Search for: CTO, CIO, CDO, CISO, VP Engineering, VP Architecture, Head of Integration, Head of Platform, Head of Middleware, Enterprise Architect, Chief Architect, Solution Architect, DSI (Directeur des Systemes d'Information), Architecte d'Entreprise at {company}. Include their name, title, and LinkedIn URL if found.""",
+IMPORTANT: If the news article NAMES a real person at {company} (appointed, quoted, mentioned), include them as contact_name. If nobody is explicitly named in your sources, leave contact_name empty. NEVER guess or invent names. Wrong contacts destroy trust with the salesperson.""",
         prompt=f"{prompt}\n\n{output_instruction}",
         provider="pplx",
     )
@@ -388,37 +388,35 @@ IMPORTANT: For every signal, also search for a senior IT/tech leader at {company
 
 
 async def _enrich_contact(item: dict) -> dict:
-    """For a signal missing a contact, run a dedicated search to find one."""
+    """For a signal missing a contact, run a dedicated search to find one.
+
+    IMPORTANT: Only returns contacts that are verifiably real (mentioned in
+    a source with a URL). Never fabricates names.
+    """
     company = item.get("company", "")
     headline = item.get("headline", "")
-    tag = item.get("tag", "")
     if not company:
         return item
 
     try:
         data = await _call_model(
-            system="You are a LinkedIn research specialist. Return only valid JSON.",
-            prompt=f"""Find ONE senior IT or technology leader at {company} who would be the right person to discuss this news with:
+            system="You are a research analyst. Return only valid JSON. NEVER invent or fabricate names.",
+            prompt=f"""Find the CIO, CTO, or Head of IT at {company}.
 
-"{headline}"
-
-Search for real people at {company} on LinkedIn. Look for these roles:
-- CTO, CIO, CDO, CISO, Chief Digital Officer, Chief Data Officer
-- VP of Engineering, VP of IT, VP of Technology, VP of Architecture
-- Head of Integration, Head of Platform, Head of Data, Head of Middleware
-- Enterprise Architect, Chief Architect, Solution Architect, Integration Architect
-- Head of Digital Transformation, Head of Cloud, Head of Infrastructure
-- Directeur des Systemes d'Information (DSI), Directeur Technique
-- Architecte d'Entreprise, Architecte SI, Responsable Integration
+CRITICAL RULES:
+- Only return a person if you found them in a VERIFIABLE source (company website, press release, news article, annual report).
+- Include the source URL where you found this person.
+- If you CANNOT find a verifiable person, return {{"name": "", "title": "", "linkedin": "", "source": ""}}
+- NEVER guess or invent a name. An empty result is better than a wrong name.
+- Do NOT fabricate LinkedIn URLs. Only include a LinkedIn URL if you found the actual profile page.
 
 Return JSON (no markdown):
 {{
-  "name": "<full name of a real person you found>",
-  "title": "<their current title at {company}>",
-  "linkedin": "<their LinkedIn profile URL, ONLY if you actually found it, else empty string>"
-}}
-
-You MUST find someone. Search harder. Look at {company}'s leadership page, LinkedIn company page, recent press releases, conference speakers. If you cannot find the exact URL, still return the name and title.""",
+  "name": "<full name ONLY if verifiably found, else empty string>",
+  "title": "<their title at {company}, else empty string>",
+  "linkedin": "<actual LinkedIn profile URL if found, else empty string>",
+  "source": "<URL where you verified this person's role, else empty string>"
+}}""",
             max_tokens=200,
             provider="pplx",
         )
@@ -426,7 +424,8 @@ You MUST find someone. Search harder. Look at {company}'s leadership page, Linke
         if content.startswith("```"):
             content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         contact = json.loads(content)
-        if contact.get("name"):
+        # Only use if name AND source are provided (verified)
+        if contact.get("name") and contact.get("source"):
             item["contact_name"] = contact["name"]
             item["contact_title"] = contact.get("title", "")
             item["contact_linkedin"] = contact.get("linkedin", "")

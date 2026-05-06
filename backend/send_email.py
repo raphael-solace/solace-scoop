@@ -229,7 +229,7 @@ def render_digest(user: dict, items: list[dict]) -> str:
         # So what (new field) / fallback to why
         so_what = _esc(item.get("so_what", item.get("why", "")))
 
-        # Contact card (if signal recommends a person)
+        # Contact card (only if we have a verified person from the article)
         contact_html = ""
         contact_name = item.get("contact_name", "")
         if contact_name:
@@ -237,22 +237,19 @@ def render_digest(user: dict, items: list[dict]) -> str:
             c_company = _esc(item.get("company", ""))
             c_linkedin = item.get("contact_linkedin", "")
 
-            # If no direct LinkedIn URL, build a search link
-            if not c_linkedin:
-                import urllib.parse
-                search_q = urllib.parse.quote_plus(f"{contact_name} {item.get('company', '')}")
-                c_linkedin = f"https://www.linkedin.com/search/results/people/?keywords={search_q}"
-
-            # Show short LinkedIn URL as visible text so it survives email forwarding
-            li_short = c_linkedin.replace("https://www.", "").replace("https://", "")
-            if len(li_short) > 50:
-                li_short = li_short[:47] + "..."
+            # Only show LinkedIn link if it's an actual profile URL (not a search URL)
+            li_html = ""
+            if c_linkedin and "/in/" in c_linkedin:
+                li_short = c_linkedin.replace("https://www.", "").replace("https://", "")
+                if len(li_short) > 50:
+                    li_short = li_short[:47] + "..."
+                li_html = f'<p style="margin:4px 0 0;"><a href="{_esc(c_linkedin)}" style="color:#0077B5; text-decoration:underline; font-size:10px;">{_esc(li_short)}</a></p>'
 
             contact_html = f"""
             <div style="margin-top:8px; padding:8px 12px; background:#f8fafb; border:1px solid #e2e8e6; border-radius:6px;">
               <p style="margin:0; font-size:12px; font-weight:700; color:#093B5F;">{_esc(contact_name)}</p>
               <p style="margin:1px 0 0; font-size:10px; color:#64748b;">{c_title} at {c_company}</p>
-              <p style="margin:4px 0 0;"><a href="{_esc(c_linkedin)}" style="color:#0077B5; text-decoration:underline; font-size:10px;">{_esc(li_short)}</a></p>
+              {li_html}
             </div>"""
 
         # Ready-to-send message (new field) / fallback to opening_line
