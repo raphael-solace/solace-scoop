@@ -322,7 +322,7 @@
     fetch(API + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: q, email: email, accounts: accounts })
+      body: JSON.stringify({ question: q, email: email, token: localStorage.getItem('scoop_token') || '', accounts: accounts })
     })
     .then(function(r) { return r.json(); })
     .then(function(d) {
