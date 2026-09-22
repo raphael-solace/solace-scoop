@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="googlebot" content="noindex, nofollow, noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://solace.com; connect-src https://x7lihybf8c.execute-api.eu-west-1.amazonaws.com; base-uri 'none'; form-action 'self'">
+  <title>Scoop Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F4E1;</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+  <a class="admin-skip-link" href="#admin-main">Skip to main content</a>
+
+  <header class="admin-nav">
+    <div class="admin-container admin-nav__inner">
+      <div class="admin-brand" aria-label="Solace Scoop admin">
+        <img src="https://solace.com/wp-content/uploads/2025/07/solace-logo.svg" alt="Solace" class="admin-brand__logo">
+        <span class="admin-brand__badge">SCOOP</span>
+        <span class="admin-brand__context">Admin</span>
+      </div>
+      <button class="admin-button admin-button--quiet" id="logout-button" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main id="admin-main">
+    <section class="admin-auth" id="login-view" aria-labelledby="login-title">
+      <div class="admin-auth__card">
+        <p class="admin-eyebrow">Restricted access</p>
+        <h1 class="admin-auth__title" id="login-title">Scoop administration</h1>
+        <p class="admin-auth__description">Sign in with your administrator credentials to view delivery operations.</p>
+
+        <form id="login-form" novalidate>
+          <div class="admin-field">
+            <label for="admin-username">Username</label>
+            <input id="admin-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+          </div>
+          <div class="admin-field">
+            <label for="admin-password">Password</label>
+            <input id="admin-password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn btn--lg btn--full admin-login-button" id="login-button" type="submit">
+            <span class="admin-button__label">Sign in</span>
+            <span class="admin-button__loading" hidden>
+              <svg class="spinner" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="60 30"></circle></svg>
+              Signing in
+            </span>
+          </button>
+        </form>
+
+        <div class="admin-message admin-message--error" id="login-message" role="alert" hidden>
+          <p id="login-message-text"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-dashboard" id="dashboard-view" aria-labelledby="dashboard-title" hidden>
+      <div class="admin-container">
+        <div class="admin-dashboard__heading">
+          <div>
+            <p class="admin-eyebrow">Delivery operations</p>
+            <h1 id="dashboard-title">Scoop overview</h1>
+            <p class="admin-dashboard__updated" id="last-updated">Loading current data…</p>
+          </div>
+          <button class="admin-button admin-button--secondary" id="refresh-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-5h-5"></path></svg>
+            Refresh
+          </button>
+        </div>
+
+        <div class="admin-message" id="dashboard-message" role="status" aria-live="polite" hidden></div>
+
+        <section aria-labelledby="kpi-title">
+          <h2 class="admin-sr-only" id="kpi-title">Key performance indicators</h2>
+          <div class="admin-kpis" id="kpi-grid" aria-busy="true">
+            <article class="admin-kpi">
+              <p class="admin-kpi__label">Subscribers</p>
+              <p class="admin-kpi__value" id="kpi-subscribers">—</p>
+            </article>
+            <article class="admin-kpi">
+              <p class="admin-kpi__label">Tracked accounts</p>
+              <p class="admin-kpi__value" id="kpi-accounts">—</p>
+            </article>
+            <article class="admin-kpi">
+              <p class="admin-kpi__label">Articles delivered this week</p>
+              <p class="admin-kpi__value" id="kpi-articles">—</p>
+            </article>
+            <article class="admin-kpi">
+              <p class="admin-kpi__label">Delivered emails</p>
+              <p class="admin-kpi__value" id="kpi-emails">—</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="admin-panel admin-chart-panel" aria-labelledby="weekly-chart-title">
+          <div class="admin-panel__heading">
+            <div>
+              <h2 id="weekly-chart-title">Articles delivered by week</h2>
+              <p>Completed weekly and breaking deliveries</p>
+            </div>
+          </div>
+          <div class="admin-chart__state" id="chart-state" role="status">Loading weekly article counts…</div>
+          <div class="admin-chart" id="weekly-chart" hidden>
+            <div class="admin-chart__scroller" id="chart-scroller" tabindex="0" aria-label="Scrollable weekly article chart">
+              <div class="admin-chart__canvas" id="chart-canvas">
+                <div class="admin-chart__y-axis" id="chart-y-axis" aria-hidden="true"></div>
+                <div class="admin-chart__plot-area">
+                  <div class="admin-chart__gridlines" id="chart-gridlines" aria-hidden="true"></div>
+                  <div class="admin-chart__bars" id="chart-bars"></div>
+                </div>
+                <div aria-hidden="true"></div>
+                <div class="admin-chart__x-axis" id="chart-x-axis" aria-hidden="true"></div>
+              </div>
+            </div>
+            <div class="admin-chart__tooltip" id="chart-tooltip" role="tooltip" hidden>
+              <strong id="chart-tooltip-value"></strong>
+              <span id="chart-tooltip-label"></span>
+            </div>
+          </div>
+          <details class="admin-chart__data" id="chart-data" hidden>
+            <summary>View accessible data table</summary>
+            <div class="admin-table-scroll">
+              <table class="admin-table admin-table--compact">
+                <caption>Weekly delivered article counts</caption>
+                <thead><tr><th scope="col">Week</th><th scope="col" class="admin-table__number">Articles</th></tr></thead>
+                <tbody id="chart-table-body"></tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+
+        <section class="admin-panel" aria-labelledby="subscriber-title">
+          <div class="admin-panel__heading">
+            <div>
+              <h2 id="subscriber-title">Subscribers</h2>
+              <p>Account coverage and delivery activity</p>
+            </div>
+          </div>
+          <div class="admin-table-scroll">
+            <table class="admin-table">
+              <caption>Paginated subscriber activity</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Email</th>
+                  <th scope="col">Focus</th>
+                  <th scope="col">Accounts</th>
+                  <th scope="col" class="admin-table__number">This-week articles</th>
+                  <th scope="col" class="admin-table__number">Email count</th>
+                  <th scope="col">Last delivery</th>
+                </tr>
+              </thead>
+              <tbody id="subscriber-table-body"></tbody>
+            </table>
+          </div>
+          <nav class="admin-pagination" aria-label="Subscriber table pages">
+            <p id="subscriber-page-status" aria-live="polite">Loading…</p>
+            <div>
+              <button class="admin-button admin-button--quiet" id="subscriber-prev" type="button">Previous</button>
+              <button class="admin-button admin-button--quiet" id="subscriber-next" type="button">Next</button>
+            </div>
+          </nav>
+        </section>
+
+        <section class="admin-panel" aria-labelledby="delivery-title">
+          <div class="admin-panel__heading">
+            <div>
+              <h2 id="delivery-title">Delivered emails</h2>
+              <p>Accepted email delivery history</p>
+            </div>
+          </div>
+          <div class="admin-table-scroll">
+            <table class="admin-table">
+              <caption>Paginated delivered email history</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Subscriber</th>
+                  <th scope="col">Accepted</th>
+                  <th scope="col" class="admin-table__number">Items</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="delivery-table-body"></tbody>
+            </table>
+          </div>
+          <nav class="admin-pagination" aria-label="Delivered email table pages">
+            <p id="delivery-page-status" aria-live="polite">Loading…</p>
+            <div>
+              <button class="admin-button admin-button--quiet" id="delivery-prev" type="button">Previous</button>
+              <button class="admin-button admin-button--quiet" id="delivery-next" type="button">Next</button>
+            </div>
+          </nav>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/admin.js" defer></script>
+</body>
+</html>
