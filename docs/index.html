@@ -171,8 +171,7 @@
   <script src="js/config.js"></script>
   <script>
   (function() {
-    var SUPABASE_URL = window.SCOOP_SUPABASE_URL || '';
-    var SUPABASE_KEY = window.SCOOP_SUPABASE_KEY || '';
+    var API_URL = window.SCOOP_API_URL || '';
 
     document.getElementById('signup-form').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -181,46 +180,33 @@
       var companies = document.getElementById('signup-companies').value.trim().split('\n').map(function(s){return s.trim();}).filter(Boolean);
 
       if (!email || !product || !companies.length) return;
+      if (!email.endsWith('@solace.com')) { alert('Scoop is currently available for Solace colleagues only. Please use your @solace.com email.'); return; }
 
       var btn = document.getElementById('btn-signup');
       btn.querySelector('.btn__text').hidden = true;
       btn.querySelector('.btn__loader').hidden = false;
       btn.disabled = true;
 
-      // Try Supabase RPC first, fallback to direct REST
-      var headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
-
-      fetch(SUPABASE_URL + '/rest/v1/rpc/signup', {
-        method: 'POST', headers: headers,
-        body: JSON.stringify({ p_email: email, p_product: product, p_companies: companies })
+      fetch(API_URL + '/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, product: product, companies: companies })
       })
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (d && d.error) throw new Error(d.error);
+      .then(function(r) {
+        return r.json().then(function(d) {
+          if (!r.ok) throw new Error((d && d.detail) || 'Signup failed');
+          return d;
+        });
+      })
+      .then(function() {
         document.getElementById('signup-form').style.display = 'none';
         document.getElementById('signup-success').style.display = 'block';
       })
-      .catch(function() {
-        // Fallback: direct insert
-        var h2 = Object.assign({}, headers, { Prefer: 'return=representation,resolution=merge-duplicates' });
-        fetch(SUPABASE_URL + '/rest/v1/users?on_conflict=email', { method: 'POST', headers: h2, body: JSON.stringify({ email: email, product: product }) })
-        .then(function(r) { return r.json(); })
-        .then(function(rows) {
-          if (!rows || !rows.length) throw new Error('Failed');
-          var uid = rows[0].id;
-          var body = companies.slice(0, 20).map(function(n) { return { user_id: uid, name: n }; });
-          return fetch(SUPABASE_URL + '/rest/v1/companies', { method: 'POST', headers: headers, body: JSON.stringify(body) });
-        })
-        .then(function() {
-          document.getElementById('signup-form').style.display = 'none';
-          document.getElementById('signup-success').style.display = 'block';
-        })
-        .catch(function(err) {
-          btn.querySelector('.btn__text').hidden = false;
-          btn.querySelector('.btn__loader').hidden = true;
-          btn.disabled = false;
-          alert('Signup failed: ' + err.message);
-        });
+      .catch(function(err) {
+        btn.querySelector('.btn__text').hidden = false;
+        btn.querySelector('.btn__loader').hidden = true;
+        btn.disabled = false;
+        alert('Signup failed: ' + err.message);
       });
     });
 
