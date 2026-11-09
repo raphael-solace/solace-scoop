@@ -104,7 +104,7 @@
             <input class="setup-form__input" type="text" id="signup-product" placeholder="e.g. Event broker, Event Portal, Agent Mesh" required>
           </div>
           <div class="setup-form__field setup-form__field--full">
-            <label class="setup-form__label" for="signup-companies">Customer accounts to track <span class="setup-form__hint">one per line, up to 20</span></label>
+          <label class="setup-form__label" for="signup-companies">Customer accounts to track <span class="setup-form__hint">one per line, up to 10</span></label>
             <textarea class="setup-form__textarea" id="signup-companies" rows="6" placeholder="Company A&#10;Company B&#10;Company C" required></textarea>
           </div>
         </div>
@@ -181,6 +181,7 @@
 
       if (!email || !product || !companies.length) return;
       if (!email.endsWith('@solace.com')) { alert('Scoop is currently available for Solace colleagues only. Please use your @solace.com email.'); return; }
+      if (companies.length > 10) { alert('Enter up to 10 customer accounts to sign up.'); return; }
 
       var btn = document.getElementById('btn-signup');
       btn.querySelector('.btn__text').hidden = true;
