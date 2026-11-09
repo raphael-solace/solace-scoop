@@ -20,13 +20,33 @@
         token: localStorage.getItem('scoop_token') || '' },
       body || {}
     );
+    return post(path, payload).catch(function (e) {
+      if (e.status === 401) {
+        localStorage.removeItem('scoop_token');
+        localStorage.removeItem('scoop_email');
+        show('auth-email');
+        throw new Error('Session expired');
+      }
+      throw e;
+    });
+  }
+
+  function post(path, payload) {
     return fetch(API + path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
+    }).catch(function () {
+      throw new Error('Could not connect to Scoop. Please try again.');
     }).then(function (r) {
-      if (r.status === 401) { localStorage.clear(); show('auth-email'); throw new Error('Session expired'); }
-      return r.json();
+      return r.json().catch(function () { return null; }).then(function (data) {
+        if (r.ok && data) return data;
+        var message = r.status < 500 && data && typeof data.detail === 'string'
+          ? data.detail : 'Scoop could not complete the request. Please try again.';
+        var error = new Error(message);
+        error.status = r.status;
+        throw error;
+      });
     });
   }
 
@@ -52,22 +72,29 @@
     var e = $('login-email').value.trim().toLowerCase();
     if (!e || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return;
     var btn = $('btn-send-code'); btnLoad(btn, true);
-    fetch(API + '/api/auth/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: e }) })
-      .then(function(r) { return r.json(); })
-      .then(function(d) { btnLoad(btn, false); if (d.error) { err('email', d.error); return; } pendingEmail = e; $('otp-email-display').textContent = e; show('auth-otp'); $('otp-code').focus(); })
-      .catch(function() { btnLoad(btn, false); err('email', 'Could not connect to server.'); });
+    post('/api/auth/send-otp', { email: e })
+      .then(function(d) {
+        if (d.status !== 'ok') throw new Error(d.error || 'Could not send the code. Please try again.');
+        pendingEmail = e; $('otp-email-display').textContent = e; show('auth-otp'); $('otp-code').focus();
+      })
+      .catch(function(e) { err('email', e.message); })
+      .finally(function() { btnLoad(btn, false); });
   });
 
   // ── Step 2: OTP ─────────────────────
   $('otp-form').addEventListener('submit', function(ev) {
     ev.preventDefault(); $('otp-error').hidden = true;
     var c = $('otp-code').value.trim();
-    if (!c || c.length !== 6) return;
+    if (!/^\d{6}$/.test(c)) { err('otp', 'Enter the six-digit code from your email.'); return; }
     var btn = $('btn-verify'); btnLoad(btn, true);
-    fetch(API + '/api/auth/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: pendingEmail, code: c }) })
-      .then(function(r) { return r.json(); })
-      .then(function(d) { btnLoad(btn, false); if (d.error) { err('otp', d.error); return; } localStorage.setItem('scoop_token', d.token); localStorage.setItem('scoop_email', pendingEmail); show('auth-loading'); load(); })
-      .catch(function() { btnLoad(btn, false); err('otp', 'Could not connect to server.'); });
+    post('/api/auth/verify-otp', { email: pendingEmail, code: c })
+      .then(function(d) {
+        if (d.status !== 'ok' || !d.token) throw new Error(d.error || 'Could not verify the code. Please try again.');
+        localStorage.setItem('scoop_token', d.token); localStorage.setItem('scoop_email', pendingEmail);
+        show('auth-loading'); load();
+      })
+      .catch(function(e) { err('otp', e.message); })
+      .finally(function() { btnLoad(btn, false); });
   });
   $('btn-back').addEventListener('click', function(ev) { ev.preventDefault(); $('otp-code').value = ''; show('auth-email'); });
 
@@ -110,7 +137,10 @@
       buildMeetingButtons();
       show('dashboard');
     })
-    .catch(function() { /* 401 already handled in api() */ });
+    .catch(function(e) {
+      show('auth-email');
+      if (e.message !== 'Session expired') err('email', e.message);
+    });
   }
 
   // ── Tabs ────────────────────────────
@@ -125,7 +155,7 @@
 
   // ── News by account (from /api/me digests) ──
   function loadNews(digests, companyNames) {
-    var byco = {};
+    var byco = Object.create(null);
     (companyNames || []).forEach(function(n) { byco[n] = []; });
     (digests || []).forEach(function(dg) {
       (dg.items || []).forEach(function(item) {
@@ -157,7 +187,7 @@
         signals.slice(0, 6).forEach(function(s) {
           var src = s.source_url || (s.sources && s.sources[0]) || '';
           var link = '', dom = '';
-          if (src) { dom = (src.split('//')[1] || '').split('/')[0].replace('www.', ''); link = '<a href="' + esc(src) + '" target="_blank" class="signal__source">' + esc(dom) + '</a>'; }
+          if (isWebUrl(src)) { dom = (src.split('//')[1] || '').split('/')[0].replace('www.', ''); link = '<a href="' + esc(src) + '" target="_blank" rel="noopener noreferrer" class="signal__source">' + esc(dom) + '</a>'; }
 
           var tagColor = '';
           var tag = (s.tag || '').toLowerCase();
@@ -212,9 +242,9 @@
     var html = '';
     people.forEach(function(p) {
       var links = '';
-      if (p.linkedin) links += '<a href="' + esc(p.linkedin) + '" target="_blank" class="signal__source" style="margin-right:8px;">LinkedIn</a>';
+      if (isWebUrl(p.linkedin)) links += '<a href="' + esc(p.linkedin) + '" target="_blank" rel="noopener noreferrer" class="signal__source" style="margin-right:8px;">LinkedIn</a>';
       if (p.email) links += '<a href="mailto:' + esc(p.email) + '" class="signal__source" style="margin-right:8px;">' + esc(p.email) + '</a>';
-      if (p.salesforce_url) links += '<a href="' + esc(p.salesforce_url) + '" target="_blank" class="signal__source">Salesforce</a>';
+      if (isWebUrl(p.salesforce_url)) links += '<a href="' + esc(p.salesforce_url) + '" target="_blank" rel="noopener noreferrer" class="signal__source">Salesforce</a>';
 
       html += '<div class="acct-card" style="margin-bottom:0.75rem;">';
       html += '<div style="padding:0.875rem 1.25rem; display:flex; align-items:center; justify-content:space-between;">';
@@ -267,11 +297,17 @@
   var chatSend = $('chat-send');
 
   function md(text) {
-    return text
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/`(.+?)`/g, '<code style="background:#f1f5f4; padding:1px 4px; border-radius:3px; font-size:0.8em;">$1</code>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:#6366f1; text-decoration:underline;">$1</a>')
+    return esc(text)
+      .replace(/\[([^\]\n]+)\]\(([^)\s]+)\)|\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`/g, function(match, label, url, bold, italic, code) {
+        if (label) {
+          return isWebUrl(url)
+            ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="color:#6366f1; text-decoration:underline;">' + label + '</a>'
+            : label;
+        }
+        if (bold) return '<strong>' + bold + '</strong>';
+        if (italic) return '<em>' + italic + '</em>';
+        return '<code style="background:#f1f5f4; padding:1px 4px; border-radius:3px; font-size:0.8em;">' + code + '</code>';
+      })
       .replace(/^### (.+)$/gm, '<strong style="font-size:0.9375rem; color:var(--navy); display:block; margin:8px 0 4px;">$1</strong>')
       .replace(/^## (.+)$/gm, '<strong style="font-size:1rem; color:var(--navy); display:block; margin:10px 0 4px;">$1</strong>')
       .replace(/^- (.+)$/gm, '<span style="display:block; padding-left:1rem; position:relative;">&#8226; $1</span>')
@@ -300,9 +336,9 @@
     div.className = 'chat__msg chat__msg--bot';
     var html = '<p style="margin:0 0 4px; font-size:0.6875rem; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.05em;">Sources</p>';
     sources.forEach(function(s) {
-      if (typeof s === 'string' && s.startsWith('http')) {
+      if (isWebUrl(s)) {
         var domain = s.split('//')[1]; if (domain) domain = domain.split('/')[0].replace('www.','');
-        html += '<a href="' + esc(s) + '" target="_blank" style="display:inline-block; margin:2px 4px 2px 0; padding:2px 8px; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:100px; font-size:0.6875rem; color:#6366f1; text-decoration:none;">' + esc(domain) + '</a>';
+        html += '<a href="' + esc(s) + '" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin:2px 4px 2px 0; padding:2px 8px; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:100px; font-size:0.6875rem; color:#6366f1; text-decoration:none;">' + esc(domain) + '</a>';
       }
     });
     div.innerHTML = html;
@@ -316,29 +352,21 @@
     chatSend.disabled = true;
     var loading = addMsg('Researching...', 'loading');
 
-    var email = localStorage.getItem('scoop_email') || '';
     var accounts = ($('profile-companies').value || '').split('\n').filter(Boolean).join(', ');
 
-    fetch(API + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: q, email: email, token: localStorage.getItem('scoop_token') || '', accounts: accounts })
-    })
-    .then(function(r) { return r.json(); })
+    api('/api/chat', { question: q, accounts: accounts })
     .then(function(d) {
-      loading.remove();
-      chatSend.disabled = false;
       if (d.answer) {
         addMsg(d.answer, 'bot');
         if (d.sources) addSources(d.sources);
-      } else if (d.error) {
-        addMsg('Sorry, I couldn\'t process that. ' + d.error, 'bot');
+      } else {
+        addMsg('Scoop could not answer that question. Please try again.', 'bot');
       }
     })
-    .catch(function() {
+    .catch(function(e) { if (e.message !== 'Session expired') addMsg(e.message, 'bot'); })
+    .finally(function() {
       loading.remove();
       chatSend.disabled = false;
-      addMsg('Could not connect to Scoop. Please try again.', 'bot');
     });
   }
 
@@ -374,4 +402,5 @@
   });
 
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function isWebUrl(s) { return typeof s === 'string' && /^https?:\/\//i.test(s); }
 })();
