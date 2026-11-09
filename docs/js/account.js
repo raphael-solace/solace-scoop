@@ -11,7 +11,7 @@
 
   var $ = document.getElementById.bind(document);
   var userId = '', pendingEmail = '';
-  var cache = { companies: [], people: [], digests: [] };
+  var cache = { companies: [], people: [], digests: [], submissions: [] };
 
   // Authenticated POST to the RDS API. Injects email+token from localStorage.
   function api(path, body) {
@@ -117,6 +117,7 @@
       cache.companies = d.companies || [];
       cache.people = d.people || [];
       cache.digests = d.digests || [];
+      cache.submissions = d.submitted_signals || [];
 
       var name = d.email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
       var since = d.created_at ? new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
@@ -133,6 +134,11 @@
         (since ? '<span class="dash__stat">Since ' + since + '</span>' : '');
 
       loadNews(cache.digests, cache.companies);
+      $('tip-company').replaceChildren(new Option('Choose an account', ''));
+      Array.from(new Set(cache.companies)).forEach(function(company) {
+        $('tip-company').add(new Option(company, company));
+      });
+      renderSubmissions();
       renderPeople(cache.people);
       buildMeetingButtons();
       show('dashboard');
@@ -154,6 +160,69 @@
   });
 
   // ── News by account (from /api/me digests) ──
+  function renderSubmissions() {
+    var list = $('submitted-list');
+    list.replaceChildren();
+    cache.submissions.forEach(function(signal) {
+      var card = document.createElement('article');
+      card.className = 'acct-card signal';
+      var headline = document.createElement('p');
+      headline.className = 'signal__headline';
+      headline.textContent = signal.headline;
+      var meta = document.createElement('p');
+      meta.className = 'signal__meta';
+      meta.textContent = signal.company + ' · ' + signal.source_published_on;
+      var note = document.createElement('p');
+      note.className = 'signal__why';
+      note.textContent = signal.note;
+      card.append(meta, headline, note);
+      [
+        [signal.source_url, signal.source_kind === 'company' ? 'Company source' : 'Trade press source'],
+        [signal.linkedin_url, 'Submitted LinkedIn post']
+      ].forEach(function(source) {
+        if (!isWebUrl(source[0])) return;
+        var link = document.createElement('a');
+        link.className = 'signal__source';
+        link.href = source[0];
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = source[1];
+        link.style.marginRight = '0.75rem';
+        card.append(link);
+      });
+      list.append(card);
+    });
+    $('submitted-signals').hidden = cache.submissions.length === 0;
+  }
+
+  $('linkedin-tip-form').addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    var form = this;
+    var status = $('tip-status');
+    var button = $('btn-tip');
+    status.hidden = true;
+    btnLoad(button, true);
+    api('/api/signals/submit', {
+      company: $('tip-company').value,
+      linkedin_url: $('tip-link').value.trim(),
+      note: $('tip-note').value.trim()
+    }).then(function(result) {
+      var signal = result.signal;
+      if (!signal) throw new Error('Scoop could not save the tip. Please try again.');
+      cache.submissions = [signal].concat(cache.submissions.filter(function(row) {
+        return row.linkedin_url !== signal.linkedin_url;
+      }));
+      renderSubmissions();
+      form.reset();
+      status.textContent = result.status === 'existing' ? 'This tip was already verified and saved.' : 'Verified and saved.';
+      status.hidden = false;
+    }).catch(function(error) {
+      if (error.message === 'Session expired') return;
+      status.textContent = error.message;
+      status.hidden = false;
+    }).finally(function() { btnLoad(button, false); });
+  });
+
   function loadNews(digests, companyNames) {
     var byco = Object.create(null);
     (companyNames || []).forEach(function(n) { byco[n] = []; });

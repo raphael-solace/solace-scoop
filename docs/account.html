@@ -115,6 +115,27 @@
 
       <!-- Panel: News -->
       <div class="dash__panel" id="panel-news">
+        <details class="dash__form-card" style="margin-bottom:1rem;">
+          <summary style="font-weight:700; color:var(--navy); cursor:pointer;">Add a LinkedIn tip</summary>
+          <p class="signal__why" style="margin:0.75rem 0;">Paste the post link and describe what happened. Scoop saves the tip when a company or trade source from the last 14 days confirms it. Use public details in the note.</p>
+          <form id="linkedin-tip-form">
+            <label class="auth__label" for="tip-company">Tracked account</label>
+            <select class="auth__input" id="tip-company" required></select>
+            <label class="auth__label" for="tip-link" style="margin-top:0.75rem;">LinkedIn post link</label>
+            <input class="auth__input" id="tip-link" type="url" maxlength="1500" placeholder="Paste the link from Copy link to post" required>
+            <label class="auth__label" for="tip-note" style="margin-top:0.75rem;">What happened?</label>
+            <textarea class="auth__input" id="tip-note" rows="3" maxlength="500" placeholder="Include names, the change, or the announcement date if you know it." required></textarea>
+            <button type="submit" class="btn btn--lg btn--full" id="btn-tip" style="margin-top:0.75rem;">
+              <span class="btn__text">Verify and save</span>
+              <span class="btn__loader" hidden>Checking sources…</span>
+            </button>
+          </form>
+          <p id="tip-status" class="signal__why" role="status" style="margin-top:0.75rem;" hidden></p>
+        </details>
+        <section id="submitted-signals" aria-label="Verified tips" style="margin-bottom:1rem;" hidden>
+          <h3 style="margin-bottom:0.5rem; color:var(--navy);">Verified tips</h3>
+          <div id="submitted-list"></div>
+        </section>
         <div id="news-container"></div>
         <p id="news-empty" class="dash__empty" hidden>No intelligence yet. Your first digest arrives Monday morning.</p>
       </div>
@@ -203,6 +224,6 @@
   </footer>
 
   <script src="js/config.js"></script>
-  <script src="js/account.js?v=20261109"></script>
+  <script src="js/account.js?v=20261109-tip"></script>
 </body>
 </html>
