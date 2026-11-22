@@ -49,6 +49,17 @@ create table if not exists reply_threads (
   updated_at timestamptz not null default now()
 );
 
+-- Signal feedback (upvote/downvote per signal)
+create table if not exists signal_feedback (
+  id uuid primary key default gen_random_uuid(),
+  digest_id uuid not null references digests(id) on delete cascade,
+  signal_index int not null,
+  user_id uuid not null references users(id) on delete cascade,
+  vote text not null check (vote in ('up', 'down')),
+  comment text,
+  created_at timestamptz not null default now()
+);
+
 -- Indexes
 create index if not exists idx_companies_user on companies(user_id);
 create index if not exists idx_digests_user on digests(user_id);
@@ -56,6 +67,8 @@ create index if not exists idx_digests_sent on digests(sent_at desc);
 create index if not exists idx_auth_tokens_token on auth_tokens(token);
 create index if not exists idx_auth_tokens_email on auth_tokens(email);
 create index if not exists idx_users_email on users(email);
+create index if not exists idx_feedback_digest on signal_feedback(digest_id);
+create index if not exists idx_feedback_user on signal_feedback(user_id);
 
 -- Row-level security
 alter table users enable row level security;
@@ -63,6 +76,7 @@ alter table companies enable row level security;
 alter table digests enable row level security;
 alter table auth_tokens enable row level security;
 alter table reply_threads enable row level security;
+alter table signal_feedback enable row level security;
 
 -- RLS policies: service role key bypasses all policies.
 -- Anon key has NO direct access to any table.

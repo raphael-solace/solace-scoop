@@ -47,3 +47,23 @@ node_modules/
 bearer.md
 backup/
 supabase/
+
+# Terraform state and vars — contain plaintext secrets (DB password, API keys,
+# Gmail app password, SAP AI Core secret, SMTP password). NEVER commit.
+infra/secret.auto.tfvars
+*.tfvars
+*.auto.tfvars
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+**/.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+
+# Local research output and credential-bearing deployment artifacts
+nvd-cve-*.txt
+nvd-cve-*.json
+helm_setup/*pull-secret*.yaml
+helm_setup/*.tar.gz
+.scoop-admin-credentials-*

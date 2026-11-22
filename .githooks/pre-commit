@@ -5,7 +5,8 @@
 RED='\033[0;31m'
 NC='\033[0m'
 
-PATTERNS="pplx-|sk-|sb_secret_|gulq fxwi|whsec_|GMAIL_APP_PASSWORD=[a-z]"
+# Match a key prefix, not the middle of names such as "task-execution".
+PATTERNS="pplx-|(^|[^[:alnum:]_])sk-[[:alnum:]_-]{16,}|sb_secret_|gulq fxwi|whsec_|GMAIL_APP_PASSWORD=[a-z]"
 
 # Only check staged files
 FILES=$(git diff --cached --name-only --diff-filter=ACMR)

@@ -4,20 +4,67 @@
 
 digest:
   companies_per_user: 20
-  max_signals_per_email: 5        # quality over quantity (was 10)
-  min_signal_strength: 3          # 5=crisis/RFP, 4=new leader, 3=partnership, 2=earnings, 1=PR fluff
-  min_persona_fit: 3              # 5=CIO/CTO, 4=VP Eng, 3=CDO, 2=CFO, 1=no IT relevance
-  news_recency_days: 14
+  max_signals_per_email: 24       # deeper weekly digest, still fresh + unique only
+  max_signals_per_company: 6      # allow depth on active accounts while preserving diversity
+  max_risk_signals: 8
+  recovery_target_signals: 20     # deepen under-covered accounts after historical dedup
+  recovery_max_companies: 16
+  min_successful_queries_per_company: 6  # distinguish provider outages from genuine no-news
+  min_signal_strength: 1          # let ranking decide, not hard cuts
+  min_persona_fit: 1              # same — score-rank everything
+  news_recency_days: 14           # strict two-week window; never backfill with stale news
   pace_between_companies_sec: 3
   pace_between_users_sec: 30
+  min_signals_before_retry: 6     # daily/breaking compatibility; weekly recovery is post-dedup
+  dedup_lookback_weeks: 12        # check 12 weeks back — NEVER send the same article twice
+
+breaking_scoop:
+  enabled: true
+  min_strength: 4               # new leader, major platform decision, or higher
+  max_per_user_per_week: 3      # up to 3 breaking alerts per week
+  companies_to_scan: 10         # scan more companies
+  recency_hours: 24
+
+brand_monitor:
+  enabled: true
+  recipients:
+    - raphael.caillon@solace.com
+    - phil.scanlon@solace.com
+  search_queries:
+    - "Solace PubSub+ OR Solace event mesh OR Solace event broker -site:solace.com -site:solace.dev"
+    - "Solace Agent Mesh OR Solace event portal -site:solace.com"
+    - "Solace partnership OR Solace customer win OR Solace announcement -site:solace.com"
+    - "Solace review OR Solace experience OR Solace vs Kafka OR PubSub+ opinion"
+    - "Solace conference OR Solace webinar OR Solace speaker -site:solace.com"
+    - "site:linkedin.com Solace PubSub OR event mesh OR Agent Mesh"
+    - "site:reddit.com OR site:news.ycombinator.com Solace messaging OR PubSub+"
+    - "Gartner OR Forrester OR IDC event streaming Solace"
+  excluded_domains:
+    - solace.com
+    - solace.dev
+    - docs.solace.com
+  recency_days: 14
+  max_mentions_per_email: 10
 
 perplexity:
   model: sonar-pro
-  max_tokens: 700
+  max_tokens: 2200
   ranking_max_tokens: 200
   temperature: 0.1
   max_retries: 3
   retry_base_delay_sec: 1
+
+readiness:
+  recipient: "raphael.caillon@solace.com"
+
+company_pool:
+  enabled: false
+  shadow_mode: true
+  prompt_version: "company-neutral-v1"
+
+sources:
+  enabled: false
+  catalog: "source_catalog.yaml"
 
 email:
   subject_template: "{count} signals this week"

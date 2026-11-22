@@ -1,0 +1,235 @@
+sources:
+  - name: sec_company_submissions
+    adapter: sec_submissions
+    endpoint: https://data.sec.gov/submissions/CIK{cik}.json
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    terms_url: https://www.sec.gov/about/webmaster-frequently-asked-questions
+    config:
+      scope: company
+      identifier_scheme: sec_cik
+    robots_url: https://www.sec.gov/robots.txt
+    poll_minutes: 60
+    max_requests_per_second: 2
+
+  - name: sec_press_releases
+    adapter: rss
+    endpoint: https://www.sec.gov/news/pressreleases.rss
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    terms_url: https://www.sec.gov/privacy.htm
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: ftc_press_releases
+    adapter: rss
+    endpoint: https://www.ftc.gov/feeds/press-release.xml
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: fca_news
+    adapter: rss
+    endpoint: https://www.fca.org.uk/news/rss.xml
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: eu_commission_press
+    adapter: rss
+    endpoint: https://ec.europa.eu/commission/presscorner/api/rss?language=en
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    licence: CC-BY-4.0-for-Commission-owned-content
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: uk_cma
+    adapter: atom
+    endpoint: https://www.gov.uk/government/organisations/competition-and-markets-authority.atom
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    licence: OGL-3.0
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: doj_news
+    adapter: rss
+    endpoint: https://www.justice.gov/news/rss
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: esma_news
+    adapter: rss
+    endpoint: https://www.esma.europa.eu/rss.xml
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: eba_news
+    adapter: rss
+    endpoint: https://www.eba.europa.eu/rss.xml
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: uk_sfo
+    adapter: atom
+    endpoint: https://www.gov.uk/government/organisations/serious-fraud-office.atom
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    licence: OGL-3.0
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: uk_ofsi
+    adapter: atom
+    endpoint: https://www.gov.uk/government/organisations/office-of-financial-sanctions-implementation.atom
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    licence: OGL-3.0
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: govinfo_federal_register
+    adapter: rss
+    endpoint: https://www.govinfo.gov/rss/fr.xml
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 60
+    max_requests_per_second: 0.5
+
+  - name: greenhouse_jobs
+    adapter: greenhouse_jobs
+    endpoint: https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    terms_url: https://docs.greenhouse.io/job-board.html
+    poll_minutes: 720
+    max_requests_per_second: 0.5
+    config:
+      scope: company
+      identifier_scheme: greenhouse_board
+
+  - name: lever_jobs
+    adapter: lever_jobs
+    endpoint: https://api.lever.co/v0/postings/{site}
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    terms_url: https://github.com/lever/postings-api
+    poll_minutes: 720
+    max_requests_per_second: 0.5
+    config:
+      scope: company
+      identifier_scheme: lever_site
+
+  - name: ashby_jobs
+    adapter: ashby_jobs
+    endpoint: https://api.ashbyhq.com/posting-api/job-board/{board_name}
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    terms_url: https://developers.ashbyhq.com/docs/public-job-posting-api
+    poll_minutes: 720
+    max_requests_per_second: 0.5
+    config:
+      scope: company
+      identifier_scheme: ashby_board
+
+  - name: smartrecruiters_jobs
+    adapter: smartrecruiters_jobs
+    endpoint: https://api.smartrecruiters.com/v1/companies/{company_identifier}/postings
+    enabled: true
+    review_status: approved
+    storage_mode: metadata_excerpt_link
+    terms_url: https://developers.smartrecruiters.com/docs/endpoints
+    poll_minutes: 720
+    max_requests_per_second: 0.5
+    config:
+      scope: company
+      identifier_scheme: smartrecruiters_company
+
+  - name: uk_companies_house
+    adapter: companies_house
+    endpoint: https://api.company-information.service.gov.uk/company/{company_number}/filing-history
+    enabled: false
+    review_status: configured_key_required
+    storage_mode: metadata_excerpt_link
+    licence: OGL-3.0
+    poll_minutes: 240
+    max_requests_per_second: 1
+
+  - name: eu_ted
+    adapter: ted_search
+    endpoint: https://api.ted.europa.eu/v3/notices/search
+    enabled: false
+    review_status: legal_notice_review_required
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 60
+    max_requests_per_second: 1
+
+  - name: sam_opportunities
+    adapter: sam_opportunities
+    endpoint: https://api.sam.gov/opportunities/v2/search
+    enabled: false
+    review_status: configured_key_required
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 1440
+    max_requests_per_second: 0.25
+
+  - name: usaspending_awards
+    adapter: usaspending
+    endpoint: https://api.usaspending.gov/api/v2/search/spending_by_award/
+    enabled: false
+    review_status: filter_configuration_required
+    storage_mode: metadata_excerpt_link
+    poll_minutes: 1440
+    max_requests_per_second: 0.25
+
+careers:
+  supported_public_adapters:
+    - greenhouse
+    - lever
+    - ashby
+    - smartrecruiters
+  html_fallback_policy: approved_official_page_jsonld_or_stable_links_only
+  unsupported_direct_scraping:
+    - linkedin
+    - google_jobs
+    - workday_private_endpoints
+
+company_feed_discovery:
+  accepted_rel_types:
+    - application/rss+xml
+    - application/atom+xml
+  common_same_origin_paths:
+    - /feed/
+    - /rss/
+    - /rss.xml
+    - /feed.xml
+    - /atom.xml
+    - /news/feed/
+    - /newsroom/feed/
+    - /press-releases/feed/
+    - /rss/pressrelease.aspx?LanguageId=1
+  default_review_status: pending
