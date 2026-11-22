@@ -2,7 +2,7 @@
 
 **Account intelligence for Solace colleagues** — powered by Solace Agent Mesh.
 
-Six AI agents research your customer accounts in parallel: champions & stakeholders, EDA & integration signals, IT initiatives, partner activity, recent news, and competitive threats. A weekly email digest delivers only fresh, verified signals — no stale data, no repeats.
+Twelve research queries cover each customer account, including champions & stakeholders, EDA & integration signals, IT initiatives, partner activity, recent news, and competitive threats. A weekly email digest delivers fresh, sourced signals and suggested next steps.
 
 **[Live demo](https://raphael-solace.github.io/solace-scoop/)**
 
@@ -10,19 +10,19 @@ Six AI agents research your customer accounts in parallel: champions & stakehold
 
 ## How it works
 
-1. Colleagues are set up with their customer accounts (via `contacts.md` or `setup_accounts.py`)
-2. Every week, GitHub Actions runs the digest pipeline for each user
-3. Six agents research each account via Perplexity AI (sonar-pro)
+1. Colleagues manage their customer accounts through the account page and FastAPI API, backed by RDS
+2. EventBridge launches the weekly pipeline in ECS Fargate
+3. Perplexity sonar-pro searches run through SAP AI Core, with bounded query concurrency
 4. A three-layer quality gate filters out stale, vague, or repeated signals
 5. A Solace-branded email lands in the colleague's inbox with actionable intel
 
 ## Architecture
 
 ```
-contacts.md / Supabase
+Account page / FastAPI / RDS PostgreSQL
     |
     v
-[Digest Pipeline - 6 agents per company]
+[ECS Digest Pipeline - 12 research queries per company]
     |
     +---> Champions & Stakeholders
     +---> EDA & Integration
@@ -43,8 +43,10 @@ Solace-branded email digest
 Signals pass through three layers before reaching an inbox:
 
 1. **Date filter** — drops signals with dates older than 14 days and background info
-2. **Headline dedup** — drops signals matching previous digest headlines (Jaccard similarity >50%)
-3. **LLM review** — cheap model (azure-gpt-4o-mini via LiteLLM) drops vague, undated, or repeated signals
+2. **History dedup** — checks source URLs, headlines, and event fingerprints against 12 weeks of delivered signals
+3. **LLM review** — GPT-4o-mini reviews repeated events through SAP AI Core, with a LiteLLM fallback
+
+Weekly readiness also checks account ownership, specific source links, delivery-day freshness, candidate uniqueness, and email rendering.
 
 ## Configuration
 
@@ -52,25 +54,43 @@ All tunable parameters live in `backend/config.yaml`:
 
 ```yaml
 digest:
-  companies_per_user: 10
-  signals_per_email: 10
+  companies_per_user: 20
+  max_signals_per_email: 24
   news_recency_days: 14
 ```
 
 ## Setup
 
 ```bash
-cp .env.example .env        # fill in API keys
+cp .env.example .env        # configure a reachable Postgres database and providers
 cd backend
 pip install -r requirements.txt
-python setup_accounts.py     # create users from accounts CSV
-python run_digest.py         # run digest for all users
+python run_migrations.py
+python run_digest.py --research-only
+python run_digest.py --preflight
 ```
+
+## Production recovery
+
+Production commands run in the ECS digest task with its Secrets Manager configuration and private RDS networking. `--research-only` resumes missing or invalid candidates and keeps ready candidates. A database advisory lock serializes scheduled research and recovery. `--preflight` validates the batch. `--send-only` claims validated candidates atomically before delivery.
+
+| Weekly job | UTC schedule |
+| --- | --- |
+| Research | Sunday 18:00 |
+| Recovery | Sunday 22:00 |
+| Recovery | Monday 03:00 |
+| Delivery | Monday 06:00 |
+
+Failed research produces a nonzero task exit and an owner readiness report. AI Core tokens use the issuer's expiry, refresh ahead of expiry, and retry one unauthorized completion with a refreshed token. Throttled requests receive longer backoff.
+
+`deploy.sh` updates the API, digest task, scheduler targets, and scheduler task permissions. Terraform manages the schedules under `infra/`. The public HTTPS API origin is configured through `public_api_url` and supplies email feedback links.
+
+Run the focused regression suite from the repository root with `PYTHONPATH=backend python3 -m pytest -q backend/test_aicore.py backend/test_accounts.py backend/test_admin.py backend/test_readiness.py backend/test_submitted_signals.py`.
 
 ## Tech stack
 
 - **Frontend**: Vanilla HTML/CSS/JS — GitHub Pages
-- **Backend**: Python / FastAPI — GitHub Actions cron
-- **AI**: Perplexity API (sonar-pro) + LiteLLM (dedup review)
-- **Database**: Supabase (PostgreSQL)
-- **Email**: Gmail SMTP
+- **Backend**: Python / FastAPI on ECS Fargate, scheduled through EventBridge
+- **AI**: SAP AI Core with Perplexity sonar-pro and GPT-4o-mini, plus configured direct API fallbacks
+- **Database**: Amazon RDS PostgreSQL via asyncpg
+- **Email**: Office 365 SMTP with Gmail fallback, HTML and plain-text versions
