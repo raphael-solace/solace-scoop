@@ -141,6 +141,22 @@ def test_weekly_freshness_is_strictly_fourteen_days() -> None:
     )
 
 
+def test_sunday_preflight_checks_mondays_freshness_window() -> None:
+    from run_digest import build_readiness_report
+    user = {"id": "test", "email": "person@solace.com", "companies": [{"name": "Airbus"}]}
+    candidate = {"id": "candidate", "items": [{
+        "company": "Airbus", "date": "2026-11-08", "headline": "An old update",
+        "sources": ["https://www.airbus.com/en/newsroom/press-releases/2026-11/old-update"],
+    }]}
+    with patch("run_digest.date") as clock, \
+         patch("db.get_all_users", AsyncMock(return_value=[user])), \
+         patch("db.get_pending_weekly_digests", AsyncMock(return_value=[candidate])):
+        clock.today.return_value = date(2026, 11, 22)
+        report = asyncio.run(build_readiness_report())
+    assert report["status"] == "NOT READY"
+    assert "stale, future, or invalid date" in report["failed_users"][0]["errors"][0]
+
+
 def test_sunday_research_saves_only_signals_still_fresh_on_monday() -> None:
     from run_digest import main as run_weekly_digest
 

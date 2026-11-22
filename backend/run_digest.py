@@ -414,6 +414,8 @@ async def build_readiness_report(
     failed = []
     article_counts = []
     validation_date = date.today()
+    if delivery_date is None and validation_date.weekday() == 6:
+        delivery_date = validation_date + timedelta(days=1)
     cutoff = (delivery_date or validation_date) - timedelta(days=MAX_SIGNAL_AGE_DAYS)
 
     for user in eligible:
