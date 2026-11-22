@@ -1,7 +1,7 @@
 """
 SAP AI Core — OAuth2 client + chat completion helper.
 
-Handles token caching (~11h lifetime), deployment-based routing,
+Handles token caching using the issuer's lifetime, deployment-based routing,
 and provider-specific URL patterns.
 
 Provider priority (set in digest.py):
@@ -13,6 +13,8 @@ Provider priority (set in digest.py):
 from __future__ import annotations
 
 import base64
+import asyncio
+import math
 import os
 import time
 
@@ -22,13 +24,20 @@ import httpx
 
 _cached_token: str = ""
 _token_expires_at: float = 0.0
-_TOKEN_TTL = 11 * 3600  # cache for 11 hours (tokens valid ~12h)
+_token_lock = asyncio.Lock()
 
 
-async def _get_token() -> str:
+async def _get_token(rejected_token: str | None = None) -> str:
     """Get a valid OAuth2 access token, refreshing if expired."""
+    async with _token_lock:
+        return await _get_token_locked(rejected_token)
+
+
+async def _get_token_locked(rejected_token: str | None) -> str:
     global _cached_token, _token_expires_at
 
+    if rejected_token is not None and rejected_token == _cached_token:
+        _token_expires_at = 0.0
     if _cached_token and time.time() < _token_expires_at:
         return _cached_token
 
@@ -41,6 +50,7 @@ async def _get_token() -> str:
 
     credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
+    requested_at = time.time()
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.post(
             auth_url,
@@ -52,8 +62,13 @@ async def _get_token() -> str:
         )
         resp.raise_for_status()
 
-    _cached_token = resp.json()["access_token"]
-    _token_expires_at = time.time() + _TOKEN_TTL
+    data = resp.json()
+    lifetime = float(data.get("expires_in", 300))
+    if not math.isfinite(lifetime) or lifetime <= 0:
+        raise RuntimeError("SAP AI Core returned an invalid token lifetime")
+    _cached_token = data["access_token"]
+    # Refresh before expiry, allowing for clock skew and request latency.
+    _token_expires_at = requested_at + lifetime - min(60, lifetime * 0.1)
     return _cached_token
 
 
@@ -80,20 +95,24 @@ async def chat_completion(
         url += "?api-version=latest"
 
     async with httpx.AsyncClient(timeout=60) as client:
-        resp = await client.post(
-            url,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "AI-Resource-Group": resource_group,
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": model,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            },
-        )
+        for attempt in range(2):
+            resp = await client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "AI-Resource-Group": resource_group,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                },
+            )
+            if resp.status_code != 401 or attempt == 1:
+                break
+            token = await _get_token(rejected_token=token)
         resp.raise_for_status()
 
     return resp.json()
