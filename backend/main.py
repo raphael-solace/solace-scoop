@@ -66,6 +66,18 @@ async def security_headers(request: Request, call_next):
     return response
 
 
+def _clean_company_names(values: list[str]) -> list[str]:
+    cleaned = {}
+    for value in values:
+        name = " ".join(value.split())
+        if not name:
+            continue
+        if len(name) > 200:
+            raise ValueError("Company name must be under 200 characters")
+        cleaned.setdefault(name.casefold(), name)
+    return list(cleaned.values())
+
+
 # -- Models ------------------------------------
 
 class SubscribeRequest(BaseModel):
@@ -83,10 +95,9 @@ class SubscribeRequest(BaseModel):
     @field_validator("companies")
     @classmethod
     def companies_valid(cls, v: list[str]) -> list[str]:
-        cleaned = [c.strip() for c in v if c.strip()][:10]
-        for c in cleaned:
-            if len(c) > 200:
-                raise ValueError("Company name must be under 200 characters")
+        cleaned = _clean_company_names(v)
+        if len(cleaned) > 10:
+            raise ValueError("Choose up to 10 companies when signing up")
         return cleaned
 
 
@@ -136,11 +147,7 @@ class SaveAccountsRequest(BaseModel):
     @field_validator("companies")
     @classmethod
     def companies_valid(cls, v: list[str]) -> list[str]:
-        cleaned = [c.strip() for c in v if c.strip()][:25]
-        for c in cleaned:
-            if len(c) > 200:
-                raise ValueError("Company name must be under 200 characters")
-        return cleaned
+        return _clean_company_names(v)
 
 
 class AddPersonRequest(BaseModel):
