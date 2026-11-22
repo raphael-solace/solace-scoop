@@ -13,7 +13,7 @@ resource "aws_cloudwatch_event_target" "source_refresh" {
   role_arn = aws_iam_role.eventbridge.arn
 
   ecs_target {
-    task_definition_arn = aws_ecs_task_definition.digest.arn
+    task_definition_arn = local.active_digest_task_definition
     task_count          = 1
     launch_type         = "FARGATE"
     network_configuration {
@@ -46,7 +46,7 @@ resource "aws_cloudwatch_event_target" "company_pool_shadow" {
   role_arn = aws_iam_role.eventbridge.arn
 
   ecs_target {
-    task_definition_arn = aws_ecs_task_definition.digest.arn
+    task_definition_arn = local.active_digest_task_definition
     task_count          = 1
     launch_type         = "FARGATE"
     network_configuration {
@@ -90,7 +90,7 @@ resource "aws_cloudwatch_event_target" "digest_recovery" {
   role_arn = aws_iam_role.eventbridge.arn
 
   ecs_target {
-    task_definition_arn = aws_ecs_task_definition.digest.arn
+    task_definition_arn = local.active_digest_task_definition
     task_count          = 1
     launch_type         = "FARGATE"
     network_configuration {
@@ -114,7 +114,7 @@ resource "aws_cloudwatch_event_target" "digest_research" {
   role_arn = aws_iam_role.eventbridge.arn
 
   ecs_target {
-    task_definition_arn = aws_ecs_task_definition.digest.arn
+    task_definition_arn = local.active_digest_task_definition
     task_count          = 1
     launch_type         = "FARGATE"
 
@@ -146,7 +146,7 @@ resource "aws_cloudwatch_event_target" "daily_scan" {
   role_arn = aws_iam_role.eventbridge.arn
 
   ecs_target {
-    task_definition_arn = aws_ecs_task_definition.digest.arn
+    task_definition_arn = local.active_digest_task_definition
     task_count          = 1
     launch_type         = "FARGATE"
 
@@ -178,7 +178,7 @@ resource "aws_cloudwatch_event_target" "brand_monitor" {
   role_arn = aws_iam_role.eventbridge.arn
 
   ecs_target {
-    task_definition_arn = aws_ecs_task_definition.digest.arn
+    task_definition_arn = local.active_digest_task_definition
     task_count          = 1
     launch_type         = "FARGATE"
 
@@ -212,7 +212,7 @@ resource "aws_cloudwatch_event_target" "digest_send" {
   role_arn = aws_iam_role.eventbridge.arn
 
   ecs_target {
-    task_definition_arn = aws_ecs_task_definition.digest.arn
+    task_definition_arn = local.active_digest_task_definition
     task_count          = 1
     launch_type         = "FARGATE"
 

@@ -1,0 +1,37 @@
+name: Regression tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  weekly-pipeline:
+    runs-on: ubuntu-latest
+    env:
+      CRON_SECRET: test-cron-secret
+      PYTHONPATH: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install runtime and test dependencies
+        run: python -m pip install -r backend/requirements.txt pytest
+      - name: Check frontend and deployment syntax
+        run: |
+          node --check docs/js/account.js
+          bash -n deploy.sh
+      - name: Run focused regressions
+        run: >-
+          python -m pytest -q
+          backend/test_aicore.py
+          backend/test_accounts.py
+          backend/test_admin.py
+          backend/test_readiness.py
+          backend/test_submitted_signals.py

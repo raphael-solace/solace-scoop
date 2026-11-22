@@ -25,6 +25,11 @@ resource "aws_security_group" "app" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  lifecycle {
+    # The public routing setup maintains the live ingress rules.
+    ignore_changes = [ingress]
+  }
 }
 
 # --- API Service (always-on) ---
@@ -79,10 +84,15 @@ resource "aws_ecs_task_definition" "api" {
   }])
 }
 
+locals {
+  active_api_task_definition    = coalesce(var.deployed_api_task_definition, aws_ecs_task_definition.api.arn)
+  active_digest_task_definition = coalesce(var.deployed_digest_task_definition, aws_ecs_task_definition.digest.arn)
+}
+
 resource "aws_ecs_service" "api" {
   name            = "${var.app_name}-api"
   cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.api.arn
+  task_definition = local.active_api_task_definition
   desired_count   = 1
   launch_type     = "FARGATE"
 
@@ -95,6 +105,11 @@ resource "aws_ecs_service" "api" {
     subnets          = data.aws_subnets.default.ids
     security_groups  = [aws_security_group.app.id]
     assign_public_ip = true
+  }
+
+  lifecycle {
+    # ALB attachments and their startup grace period belong to public routing.
+    ignore_changes = [load_balancer, health_check_grace_period_seconds]
   }
 }
 

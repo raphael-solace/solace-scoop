@@ -85,6 +85,8 @@ Failed research produces a nonzero task exit and an owner readiness report. AI C
 
 `deploy.sh` updates the API, digest task, scheduler targets, and scheduler task permissions. Terraform manages the schedules under `infra/`. The public HTTPS API origin is configured through `public_api_url` and supplies email feedback links.
 
+The deployment script carries forward running task revisions during infrastructure preparation. Scheduler permissions cover the old and new revisions during the switch. Existing ALB attachments and ingress rules remain owned by the public routing setup. Deployment checks verify the requested API revision after ECS stabilizes.
+
 Run the focused regression suite from the repository root with `PYTHONPATH=backend python3 -m pytest -q backend/test_aicore.py backend/test_accounts.py backend/test_admin.py backend/test_readiness.py backend/test_submitted_signals.py`.
 
 ## Tech stack

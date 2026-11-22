@@ -62,12 +62,33 @@ printf 'Account: %s\nImage tag: %s\n\n' "$ACCOUNT_ID" "$IMAGE_TAG"
 printf '[1/6] Terraform validate/apply...\n'
 terraform -chdir="$SCRIPT_DIR/infra" init -input=false
 terraform -chdir="$SCRIPT_DIR/infra" validate -no-color
+CURRENT_API_TASK=""
+CURRENT_DIGEST_TASK=""
+CURRENT_CLUSTER=$(aws ecs describe-clusters --clusters "$APP_NAME" --region "$REGION" \
+  --query 'clusters[0].clusterArn' --output text)
+if [ -n "$CURRENT_CLUSTER" ] && [ "$CURRENT_CLUSTER" != "None" ]; then
+  CURRENT_API_TASK=$(aws ecs describe-services --cluster "$APP_NAME" --services "$APP_NAME-api" \
+    --region "$REGION" --query 'services[0].taskDefinition' --output text)
+fi
+CURRENT_RESEARCH_RULE=$(aws events list-rules --name-prefix "$APP_NAME-research" \
+  --region "$REGION" --query "Rules[?Name=='$APP_NAME-research'].Name | [0]" --output text)
+if [ -n "$CURRENT_RESEARCH_RULE" ] && [ "$CURRENT_RESEARCH_RULE" != "None" ]; then
+  CURRENT_DIGEST_TASK=$(aws events list-targets-by-rule --rule "$APP_NAME-research" \
+    --region "$REGION" --query 'Targets[0].EcsParameters.TaskDefinitionArn' --output text)
+fi
+DEPLOY_ARGS=(-auto-approve -input=false)
+if [ -n "$CURRENT_API_TASK" ] && [ "$CURRENT_API_TASK" != "None" ]; then
+  DEPLOY_ARGS+=("-var=deployed_api_task_definition=$CURRENT_API_TASK")
+fi
+if [ -n "$CURRENT_DIGEST_TASK" ] && [ "$CURRENT_DIGEST_TASK" != "None" ]; then
+  DEPLOY_ARGS+=("-var=deployed_digest_task_definition=$CURRENT_DIGEST_TASK")
+fi
 if [ "$(aws secretsmanager list-secret-version-ids --secret-id "$ADMIN_SECRET_NAME" \
   --region "$REGION" --query 'length(Versions)' --output text 2>/dev/null || printf 0)" = "0" ]; then
   printf 'Admin credentials are not provisioned. Run %s --provision-admin first.\n' "$0" >&2
   exit 1
 fi
-terraform -chdir="$SCRIPT_DIR/infra" apply -auto-approve -input=false
+terraform -chdir="$SCRIPT_DIR/infra" apply "${DEPLOY_ARGS[@]}"
 ECR_REPO=$(terraform -chdir="$SCRIPT_DIR/infra" output -raw ecr_repository_url)
 
 printf '\n[2/6] Building immutable image...\n'
@@ -141,35 +162,68 @@ for statement in d['Statement']:
     actions=statement.get('Action',[])
     if isinstance(actions,str): actions=[actions]
     if 'ecs:RunTask' in actions:
-        statement['Resource']=[arn]
+        resources=statement.get('Resource',[])
+        if isinstance(resources,str): resources=[resources]
+        statement['Resource']=list(dict.fromkeys(resources+[arn]))
 open('/tmp/scoop-eventbridge-policy.json','w').write(json.dumps(d))
 PY
 aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name "$POLICY_NAME" \
   --policy-document file:///tmp/scoop-eventbridge-policy.json
 
+RULES_PRESENT=$(aws events list-rules --name-prefix "$APP_NAME-" --region "$REGION" \
+  --query 'Rules[].Name' --output text | tr '\t' '\n')
 for RULE in "$APP_NAME-research" "$APP_NAME-send" "$APP_NAME-brand-monitor" \
             "$APP_NAME-daily-scan" "$APP_NAME-source-refresh" \
             "$APP_NAME-company-pool-shadow" "$APP_NAME-recovery-sunday" \
             "$APP_NAME-recovery-monday"; do
+  if ! grep -Fxq "$RULE" <<< "$RULES_PRESENT"; then continue; fi
   COUNT=$(aws events list-targets-by-rule --rule "$RULE" --region "$REGION" \
-    --query 'length(Targets)' --output text 2>/dev/null || echo 0)
+    --query 'length(Targets)' --output text)
   [ "$COUNT" = "0" ] && continue
   aws events list-targets-by-rule --rule "$RULE" --region "$REGION" \
-    --query 'Targets[0]' > "/tmp/$RULE-target.json"
+    --query 'Targets' > "/tmp/$RULE-target.json"
   python3 - "$RULE" "$DIGEST_TASK" <<'PY'
 import json,sys
 rule,arn=sys.argv[1:]
 p=f'/tmp/{rule}-target.json'
-d=json.load(open(p)); d['EcsParameters']['TaskDefinitionArn']=arn
-open(p,'w').write(json.dumps([d]))
+d=json.load(open(p))
+for target in d:
+    if 'EcsParameters' in target:
+        target['EcsParameters']['TaskDefinitionArn']=arn
+open(p,'w').write(json.dumps(d))
 PY
-  aws events put-targets --rule "$RULE" --region "$REGION" \
-    --targets "file:///tmp/$RULE-target.json" >/dev/null
+  FAILED_TARGETS=$(aws events put-targets --rule "$RULE" --region "$REGION" \
+    --targets "file:///tmp/$RULE-target.json" --query FailedEntryCount --output text)
+  if [ "$FAILED_TARGETS" != "0" ]; then
+    printf 'Scheduler target update failed for %s\n' "$RULE" >&2
+    exit 1
+  fi
 done
+
+# Retire the preceding scheduler permission after all targets have moved.
+python3 - "$DIGEST_TASK" <<'PY'
+import json,sys
+path='/tmp/scoop-eventbridge-policy.json'
+document=json.load(open(path))
+for statement in document['Statement']:
+    actions=statement.get('Action',[])
+    if isinstance(actions,str): actions=[actions]
+    if 'ecs:RunTask' in actions:
+        statement['Resource']=[sys.argv[1]]
+open(path,'w').write(json.dumps(document))
+PY
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name "$POLICY_NAME" \
+  --policy-document file:///tmp/scoop-eventbridge-policy.json
 
 aws ecs update-service --cluster "$APP_NAME" --service "$APP_NAME-api" \
   --task-definition "$API_TASK" --force-new-deployment \
   --region "$REGION" --no-cli-pager >/dev/null
 aws ecs wait services-stable --cluster "$APP_NAME" --services "$APP_NAME-api" --region "$REGION"
+RUNNING_API_TASK=$(aws ecs describe-services --cluster "$APP_NAME" --services "$APP_NAME-api" \
+  --region "$REGION" --query 'services[0].taskDefinition' --output text)
+if [ "$RUNNING_API_TASK" != "$API_TASK" ]; then
+  printf 'API deployment rolled back before reaching the requested revision\n' >&2
+  exit 1
+fi
 
 printf '\n=== Deployed ===\nImage: %s\nAPI: %s\nDigest: %s\n' "$IMAGE" "$API_TASK" "$DIGEST_TASK"

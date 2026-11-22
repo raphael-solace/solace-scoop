@@ -64,7 +64,7 @@ resource "aws_iam_role_policy" "eventbridge_run_task" {
       {
         Effect   = "Allow"
         Action   = ["ecs:RunTask"]
-        Resource = [aws_ecs_task_definition.digest.arn]
+        Resource = [local.active_digest_task_definition]
         Condition = {
           ArnEquals = {
             "ecs:cluster" = aws_ecs_cluster.main.arn
