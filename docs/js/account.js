@@ -157,6 +157,7 @@
       document.querySelectorAll('.dash__panel').forEach(function(p) { p.hidden = true; });
       $('panel-' + tab.dataset.tab).hidden = false;
     });
+    if (window.location.hash === '#' + tab.dataset.tab) tab.click();
   });
 
   // ── News by account (from /api/me digests) ──
@@ -269,8 +270,18 @@
           if (s.date) html += '<span class="signal__date">' + esc(s.date) + '</span>';
           html += '</div>';
           html += '<p class="signal__headline">' + esc(s.headline || '') + '</p>';
-          if (s.why) html += '<p class="signal__why">' + esc(s.why) + '</p>';
-          if (s.opening_line) html += '<div class="signal__opener">"' + esc(s.opening_line) + '"</div>';
+          var context = s.so_what || s.why;
+          var outreach = s.message || s.opening_line;
+          if (context) html += '<p class="signal__why">' + esc(context) + '</p>';
+          if (s.contact_name) {
+            html += '<p class="signal__why"><strong>' + esc(s.contact_name) + '</strong>';
+            if (s.contact_title) html += ' &middot; ' + esc(s.contact_title);
+            if (isWebUrl(s.contact_linkedin) && /^https:\/\/(www\.)?linkedin\.com\/in\//i.test(s.contact_linkedin)) {
+              html += ' &middot; <a href="' + esc(s.contact_linkedin) + '" target="_blank" rel="noopener noreferrer">View contact</a>';
+            }
+            html += '</p>';
+          }
+          if (outreach) html += '<div class="signal__opener">"' + esc(outreach) + '"</div>';
           html += '</div>';
         });
       } else {
